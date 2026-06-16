@@ -1,0 +1,66 @@
+[2026-06-06T11:44:53.415Z] [INFO ] [HTTP] POST /api/images/upload
+[2026-06-06T11:44:53.437Z] [INFO ] [FalService] uploadImage START — person.jpeg 279312 bytes
+[2026-06-06T11:44:54.293Z] [INFO ] [FalService] uploadImage initiate ←
+{
+  "file_url": "https://v3b.fal.media/files/b/0a9d3409/koBABNFbOhNXWofZs9T5V_person.jpeg",
+  "upload_url": "https://v3b.fal.media/files/b/0a9d3409/koBABNFbOhNXWofZs9T5V_person.jpeg?signature=slXCdbpwAnUkRyGo"
+}
+[2026-06-06T11:44:55.958Z] [INFO ] [FalService] uploadImage PUT done — CDN URL: https://v3b.fal.media/files/b/0a9d3409/koBABNFbOhNXWofZs9T5V_person.jpeg
+[2026-06-06T11:44:55.961Z] [INFO ] [HTTP] POST /api/images/upload → 200
+[2026-06-06T11:49:39.408Z] [INFO ] [HTTP] POST /api/images/upload
+[2026-06-06T11:49:39.416Z] [INFO ] [FalService] uploadImage START — person.jpeg 279312 bytes
+[2026-06-06T11:49:40.312Z] [INFO ] [FalService] uploadImage initiate ←
+{
+  "file_url": "https://v3b.fal.media/files/b/0a9d3422/LvTZeVVYd9UoE2C9wl23t_person.jpeg",
+  "upload_url": "https://v3b.fal.media/files/b/0a9d3422/LvTZeVVYd9UoE2C9wl23t_person.jpeg?signature=wOds0efY8EBlgD24"
+}
+[2026-06-06T11:49:42.004Z] [INFO ] [FalService] uploadImage PUT done — CDN URL: https://v3b.fal.media/files/b/0a9d3422/LvTZeVVYd9UoE2C9wl23t_person.jpeg
+[2026-06-06T11:49:42.005Z] [INFO ] [HTTP] POST /api/images/upload → 200
+[2026-06-06T11:52:55.306Z] [INFO ] [HTTP] POST /api/images/upload
+[2026-06-06T11:52:55.328Z] [INFO ] [FalService] uploadImage START — person.jpeg 279312 bytes
+[2026-06-06T11:52:56.258Z] [INFO ] [FalService] uploadImage initiate ←
+{
+  "file_url": "https://v3b.fal.media/files/b/0a9d3435/e-NmXRrZTJiNL9Nh-lPgz_person.jpeg",
+  "upload_url": "https://v3b.fal.media/files/b/0a9d3435/e-NmXRrZTJiNL9Nh-lPgz_person.jpeg?signature=-x99MKfsT-O6PSqn"
+}
+[2026-06-06T11:52:58.106Z] [INFO ] [FalService] uploadImage PUT done — CDN URL: https://v3b.fal.media/files/b/0a9d3435/e-NmXRrZTJiNL9Nh-lPgz_person.jpeg
+[2026-06-06T11:52:58.111Z] [INFO ] [HTTP] POST /api/images/upload → 200
+[2026-06-06T11:52:58.121Z] [INFO ] [HTTP] POST /api/images/upload
+[2026-06-06T11:52:58.125Z] [INFO ] [FalService] uploadImage START — garment.jpg 27429 bytes
+[2026-06-06T11:52:58.580Z] [INFO ] [FalService] uploadImage initiate ←
+{
+  "file_url": "https://v3b.fal.media/files/b/0a9d3435/5kPP_nb8LqR9O7R1jhKzA_garment.jpg",
+  "upload_url": "https://v3b.fal.media/files/b/0a9d3435/5kPP_nb8LqR9O7R1jhKzA_garment.jpg?signature=M_NkFJ-iVmeXgJQo"
+}
+[2026-06-06T11:52:59.557Z] [INFO ] [FalService] uploadImage PUT done — CDN URL: https://v3b.fal.media/files/b/0a9d3435/5kPP_nb8LqR9O7R1jhKzA_garment.jpg
+[2026-06-06T11:52:59.558Z] [INFO ] [HTTP] POST /api/images/upload → 200
+[2026-06-06T11:52:59.572Z] [INFO ] [HTTP] POST /api/images/generate
+[2026-06-06T11:52:59.613Z] [INFO ] [FalService] generateImage → POST queue
+{
+  "endpoint": "https://queue.fal.run/fal-ai/flux-pro/kontext",
+  "sourceImageUrl": "https://v3b.fal.media/files/b/0a9d3435/e-NmXRrZTJiNL9Nh-lPgz_person.jpeg",
+  "referenceImageUrl": "https://v3b.fal.media/files/b/0a9d3435/5kPP_nb8LqR9O7R1jhKzA_garment.jpg",
+  "prompt": "Apply the style and colors from the reference image. Use the style and visual characteristics from this reference image: https://v3b.fal.media/files/b/0a9d3435/5kPP_nb8LqR9O7R1jhKzA_garment.jpg"
+}
+[2026-06-06T11:53:00.386Z] [INFO ] [FalService] generateImage ← 200
+{
+  "requestId": "019e9cc7-7e6c-7570-840b-a1788c454488"
+}
+[2026-06-06T11:53:00.388Z] [INFO ] [HTTP] POST /api/images/generate → 202
+[2026-06-06T11:53:03.396Z] [INFO ] [HTTP] GET /api/images/jobs/019e9cc7-7e6c-7570-840b-a1788c454488
+[2026-06-06T11:53:03.397Z] [INFO ] [FalService] getJobStatus → GET https://queue.fal.run/fal-ai/flux-pro/kontext/requests/019e9cc7-7e6c-7570-840b-a1788c454488/status
+[2026-06-06T11:53:03.664Z] [ERROR] [FalService] getJobStatus FAILED
+{
+  "status": 405,
+  "data": "",
+  "message": "Request failed with status code 405"
+}
+[2026-06-06T11:53:03.666Z] [INFO ] [HTTP] GET /api/images/jobs/019e9cc7-7e6c-7570-840b-a1788c454488 → 500
+[2026-06-06T11:53:06.674Z] [INFO ] [HTTP] GET /api/images/jobs/019e9cc7-7e6c-7570-840b-a1788c454488
+[2026-06-06T11:53:06.675Z] [INFO ] [FalService] getJobStatus → GET https://queue.fal.run/fal-ai/flux-pro/kontext/requests/019e9cc7-7e6c-7570-840b-a1788c454488/status
+[2026-06-06T11:53:06.931Z] [ERROR] [FalService] getJobStatus FAILED
+{
+  "status": 405,
+  "data": "",
+  "message": "Request failed with status code 405"
+}

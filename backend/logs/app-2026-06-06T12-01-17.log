@@ -1,0 +1,170 @@
+[2026-06-06T12:02:26.413Z] [INFO ] [HTTP] POST /api/images/upload
+[2026-06-06T12:02:26.433Z] [INFO ] [FalService] uploadImage START — person.jpeg 279312 bytes
+[2026-06-06T12:02:27.357Z] [INFO ] [FalService] uploadImage initiate ←
+{
+  "file_url": "https://v3b.fal.media/files/b/0a9d346e/Cz6bPBFxqpwaFhIeFfNrq_person.jpeg",
+  "upload_url": "https://v3b.fal.media/files/b/0a9d346e/Cz6bPBFxqpwaFhIeFfNrq_person.jpeg?signature=5RsFF7bD0eO8Ne1m"
+}
+[2026-06-06T12:02:29.079Z] [INFO ] [FalService] uploadImage PUT done — CDN URL: https://v3b.fal.media/files/b/0a9d346e/Cz6bPBFxqpwaFhIeFfNrq_person.jpeg
+[2026-06-06T12:02:29.086Z] [INFO ] [HTTP] POST /api/images/upload → 200
+[2026-06-06T12:02:29.093Z] [INFO ] [HTTP] POST /api/images/upload
+[2026-06-06T12:02:29.097Z] [INFO ] [FalService] uploadImage START — garment.jpg 27429 bytes
+[2026-06-06T12:02:29.389Z] [INFO ] [FalService] uploadImage initiate ←
+{
+  "file_url": "https://v3b.fal.media/files/b/0a9d3473/GXaOXV5grTC_U1Nustwvp_garment.jpg",
+  "upload_url": "https://v3b.fal.media/files/b/0a9d3473/GXaOXV5grTC_U1Nustwvp_garment.jpg?signature=TtpTlLYWTr_4b4Le"
+}
+[2026-06-06T12:02:30.339Z] [INFO ] [FalService] uploadImage PUT done — CDN URL: https://v3b.fal.media/files/b/0a9d3473/GXaOXV5grTC_U1Nustwvp_garment.jpg
+[2026-06-06T12:02:30.341Z] [INFO ] [HTTP] POST /api/images/upload → 200
+[2026-06-06T12:02:30.349Z] [INFO ] [HTTP] POST /api/images/generate
+[2026-06-06T12:02:30.382Z] [INFO ] [FalService] generateImage → POST queue
+{
+  "endpoint": "https://queue.fal.run/fal-ai/flux-pro/kontext",
+  "sourceImageUrl": "https://v3b.fal.media/files/b/0a9d346e/Cz6bPBFxqpwaFhIeFfNrq_person.jpeg",
+  "referenceImageUrl": "https://v3b.fal.media/files/b/0a9d3473/GXaOXV5grTC_U1Nustwvp_garment.jpg",
+  "prompt": "Apply the style and colors from the reference image. Use the style and visual characteristics from this reference image: https://v3b.fal.media/files/b/0a9d3473/GXaOXV5grTC_U1Nustwvp_garment.jpg"
+}
+[2026-06-06T12:02:31.156Z] [INFO ] [FalService] generateImage ← 200
+{
+  "status": "IN_QUEUE",
+  "request_id": "019e9cd0-3402-7491-9ec9-18b2ff59bb29",
+  "response_url": "https://queue.fal.run/fal-ai/flux-pro/requests/019e9cd0-3402-7491-9ec9-18b2ff59bb29",
+  "status_url": "https://queue.fal.run/fal-ai/flux-pro/requests/019e9cd0-3402-7491-9ec9-18b2ff59bb29/status",
+  "cancel_url": "https://queue.fal.run/fal-ai/flux-pro/requests/019e9cd0-3402-7491-9ec9-18b2ff59bb29/cancel",
+  "logs": null,
+  "metrics": {},
+  "queue_position": 1
+}
+[2026-06-06T12:02:31.157Z] [INFO ] [FalService] generateImage stored URLs
+{
+  "statusUrl": "https://queue.fal.run/fal-ai/flux-pro/requests/019e9cd0-3402-7491-9ec9-18b2ff59bb29/status",
+  "resultUrl": "https://queue.fal.run/fal-ai/flux-pro/requests/019e9cd0-3402-7491-9ec9-18b2ff59bb29"
+}
+[2026-06-06T12:02:31.163Z] [INFO ] [HTTP] POST /api/images/generate → 202
+[2026-06-06T12:02:34.168Z] [INFO ] [HTTP] GET /api/images/jobs/019e9cd0-3402-7491-9ec9-18b2ff59bb29
+[2026-06-06T12:02:34.170Z] [INFO ] [FalService] getJobStatus → GET https://queue.fal.run/fal-ai/flux-pro/requests/019e9cd0-3402-7491-9ec9-18b2ff59bb29/status
+[2026-06-06T12:02:34.422Z] [INFO ] [FalService] getJobStatus ← 202
+{
+  "status": "IN_PROGRESS",
+  "request_id": "019e9cd0-3402-7491-9ec9-18b2ff59bb29",
+  "response_url": "https://queue.fal.run/fal-ai/flux-pro/requests/019e9cd0-3402-7491-9ec9-18b2ff59bb29",
+  "status_url": "https://queue.fal.run/fal-ai/flux-pro/requests/019e9cd0-3402-7491-9ec9-18b2ff59bb29/status",
+  "cancel_url": "https://queue.fal.run/fal-ai/flux-pro/requests/019e9cd0-3402-7491-9ec9-18b2ff59bb29/cancel",
+  "logs": null,
+  "metrics": {}
+}
+[2026-06-06T12:02:34.425Z] [INFO ] [HTTP] GET /api/images/jobs/019e9cd0-3402-7491-9ec9-18b2ff59bb29 → 200
+[2026-06-06T12:02:37.432Z] [INFO ] [HTTP] GET /api/images/jobs/019e9cd0-3402-7491-9ec9-18b2ff59bb29
+[2026-06-06T12:02:37.433Z] [INFO ] [FalService] getJobStatus → GET https://queue.fal.run/fal-ai/flux-pro/requests/019e9cd0-3402-7491-9ec9-18b2ff59bb29/status
+[2026-06-06T12:02:37.687Z] [INFO ] [FalService] getJobStatus ← 202
+{
+  "status": "IN_PROGRESS",
+  "request_id": "019e9cd0-3402-7491-9ec9-18b2ff59bb29",
+  "response_url": "https://queue.fal.run/fal-ai/flux-pro/requests/019e9cd0-3402-7491-9ec9-18b2ff59bb29",
+  "status_url": "https://queue.fal.run/fal-ai/flux-pro/requests/019e9cd0-3402-7491-9ec9-18b2ff59bb29/status",
+  "cancel_url": "https://queue.fal.run/fal-ai/flux-pro/requests/019e9cd0-3402-7491-9ec9-18b2ff59bb29/cancel",
+  "logs": null,
+  "metrics": {}
+}
+[2026-06-06T12:02:37.689Z] [INFO ] [HTTP] GET /api/images/jobs/019e9cd0-3402-7491-9ec9-18b2ff59bb29 → 304
+[2026-06-06T12:02:40.696Z] [INFO ] [HTTP] GET /api/images/jobs/019e9cd0-3402-7491-9ec9-18b2ff59bb29
+[2026-06-06T12:02:40.697Z] [INFO ] [FalService] getJobStatus → GET https://queue.fal.run/fal-ai/flux-pro/requests/019e9cd0-3402-7491-9ec9-18b2ff59bb29/status
+[2026-06-06T12:02:40.962Z] [INFO ] [FalService] getJobStatus ← 202
+{
+  "status": "IN_PROGRESS",
+  "request_id": "019e9cd0-3402-7491-9ec9-18b2ff59bb29",
+  "response_url": "https://queue.fal.run/fal-ai/flux-pro/requests/019e9cd0-3402-7491-9ec9-18b2ff59bb29",
+  "status_url": "https://queue.fal.run/fal-ai/flux-pro/requests/019e9cd0-3402-7491-9ec9-18b2ff59bb29/status",
+  "cancel_url": "https://queue.fal.run/fal-ai/flux-pro/requests/019e9cd0-3402-7491-9ec9-18b2ff59bb29/cancel",
+  "logs": null,
+  "metrics": {}
+}
+[2026-06-06T12:02:40.964Z] [INFO ] [HTTP] GET /api/images/jobs/019e9cd0-3402-7491-9ec9-18b2ff59bb29 → 304
+[2026-06-06T12:02:43.973Z] [INFO ] [HTTP] GET /api/images/jobs/019e9cd0-3402-7491-9ec9-18b2ff59bb29
+[2026-06-06T12:02:43.974Z] [INFO ] [FalService] getJobStatus → GET https://queue.fal.run/fal-ai/flux-pro/requests/019e9cd0-3402-7491-9ec9-18b2ff59bb29/status
+[2026-06-06T12:02:44.239Z] [INFO ] [FalService] getJobStatus ← 202
+{
+  "status": "IN_PROGRESS",
+  "request_id": "019e9cd0-3402-7491-9ec9-18b2ff59bb29",
+  "response_url": "https://queue.fal.run/fal-ai/flux-pro/requests/019e9cd0-3402-7491-9ec9-18b2ff59bb29",
+  "status_url": "https://queue.fal.run/fal-ai/flux-pro/requests/019e9cd0-3402-7491-9ec9-18b2ff59bb29/status",
+  "cancel_url": "https://queue.fal.run/fal-ai/flux-pro/requests/019e9cd0-3402-7491-9ec9-18b2ff59bb29/cancel",
+  "logs": null,
+  "metrics": {}
+}
+[2026-06-06T12:02:44.243Z] [INFO ] [HTTP] GET /api/images/jobs/019e9cd0-3402-7491-9ec9-18b2ff59bb29 → 304
+[2026-06-06T12:02:47.249Z] [INFO ] [HTTP] GET /api/images/jobs/019e9cd0-3402-7491-9ec9-18b2ff59bb29
+[2026-06-06T12:02:47.250Z] [INFO ] [FalService] getJobStatus → GET https://queue.fal.run/fal-ai/flux-pro/requests/019e9cd0-3402-7491-9ec9-18b2ff59bb29/status
+[2026-06-06T12:02:47.515Z] [INFO ] [FalService] getJobStatus ← 202
+{
+  "status": "IN_PROGRESS",
+  "request_id": "019e9cd0-3402-7491-9ec9-18b2ff59bb29",
+  "response_url": "https://queue.fal.run/fal-ai/flux-pro/requests/019e9cd0-3402-7491-9ec9-18b2ff59bb29",
+  "status_url": "https://queue.fal.run/fal-ai/flux-pro/requests/019e9cd0-3402-7491-9ec9-18b2ff59bb29/status",
+  "cancel_url": "https://queue.fal.run/fal-ai/flux-pro/requests/019e9cd0-3402-7491-9ec9-18b2ff59bb29/cancel",
+  "logs": null,
+  "metrics": {}
+}
+[2026-06-06T12:02:47.517Z] [INFO ] [HTTP] GET /api/images/jobs/019e9cd0-3402-7491-9ec9-18b2ff59bb29 → 304
+[2026-06-06T12:02:50.525Z] [INFO ] [HTTP] GET /api/images/jobs/019e9cd0-3402-7491-9ec9-18b2ff59bb29
+[2026-06-06T12:02:50.526Z] [INFO ] [FalService] getJobStatus → GET https://queue.fal.run/fal-ai/flux-pro/requests/019e9cd0-3402-7491-9ec9-18b2ff59bb29/status
+[2026-06-06T12:02:50.784Z] [INFO ] [FalService] getJobStatus ← 202
+{
+  "status": "IN_PROGRESS",
+  "request_id": "019e9cd0-3402-7491-9ec9-18b2ff59bb29",
+  "response_url": "https://queue.fal.run/fal-ai/flux-pro/requests/019e9cd0-3402-7491-9ec9-18b2ff59bb29",
+  "status_url": "https://queue.fal.run/fal-ai/flux-pro/requests/019e9cd0-3402-7491-9ec9-18b2ff59bb29/status",
+  "cancel_url": "https://queue.fal.run/fal-ai/flux-pro/requests/019e9cd0-3402-7491-9ec9-18b2ff59bb29/cancel",
+  "logs": null,
+  "metrics": {}
+}
+[2026-06-06T12:02:50.786Z] [INFO ] [HTTP] GET /api/images/jobs/019e9cd0-3402-7491-9ec9-18b2ff59bb29 → 304
+[2026-06-06T12:02:53.794Z] [INFO ] [HTTP] GET /api/images/jobs/019e9cd0-3402-7491-9ec9-18b2ff59bb29
+[2026-06-06T12:02:53.795Z] [INFO ] [FalService] getJobStatus → GET https://queue.fal.run/fal-ai/flux-pro/requests/019e9cd0-3402-7491-9ec9-18b2ff59bb29/status
+[2026-06-06T12:02:54.053Z] [INFO ] [FalService] getJobStatus ← 202
+{
+  "status": "IN_PROGRESS",
+  "request_id": "019e9cd0-3402-7491-9ec9-18b2ff59bb29",
+  "response_url": "https://queue.fal.run/fal-ai/flux-pro/requests/019e9cd0-3402-7491-9ec9-18b2ff59bb29",
+  "status_url": "https://queue.fal.run/fal-ai/flux-pro/requests/019e9cd0-3402-7491-9ec9-18b2ff59bb29/status",
+  "cancel_url": "https://queue.fal.run/fal-ai/flux-pro/requests/019e9cd0-3402-7491-9ec9-18b2ff59bb29/cancel",
+  "logs": null,
+  "metrics": {}
+}
+[2026-06-06T12:02:54.055Z] [INFO ] [HTTP] GET /api/images/jobs/019e9cd0-3402-7491-9ec9-18b2ff59bb29 → 304
+[2026-06-06T12:02:57.064Z] [INFO ] [HTTP] GET /api/images/jobs/019e9cd0-3402-7491-9ec9-18b2ff59bb29
+[2026-06-06T12:02:57.065Z] [INFO ] [FalService] getJobStatus → GET https://queue.fal.run/fal-ai/flux-pro/requests/019e9cd0-3402-7491-9ec9-18b2ff59bb29/status
+[2026-06-06T12:02:57.318Z] [INFO ] [FalService] getJobStatus ← 200
+{
+  "status": "COMPLETED",
+  "request_id": "019e9cd0-3402-7491-9ec9-18b2ff59bb29",
+  "response_url": "https://queue.fal.run/fal-ai/flux-pro/requests/019e9cd0-3402-7491-9ec9-18b2ff59bb29",
+  "status_url": "https://queue.fal.run/fal-ai/flux-pro/requests/019e9cd0-3402-7491-9ec9-18b2ff59bb29/status",
+  "cancel_url": "https://queue.fal.run/fal-ai/flux-pro/requests/019e9cd0-3402-7491-9ec9-18b2ff59bb29/cancel",
+  "logs": null,
+  "metrics": {
+    "inference_time": 24.883435010910034
+  }
+}
+[2026-06-06T12:02:57.320Z] [INFO ] [FalService] fetchResult → GET https://queue.fal.run/fal-ai/flux-pro/requests/019e9cd0-3402-7491-9ec9-18b2ff59bb29
+[2026-06-06T12:02:57.574Z] [INFO ] [FalService] fetchResult ←
+{
+  "images": [
+    {
+      "url": "https://v3b.fal.media/files/b/0a9d3471/ScdusyJ_wGxtYNHTBqWlb_e70a8574bcbd4d9c9c6e889a7d1610e9.jpg",
+      "content_type": "image/jpeg",
+      "file_name": null,
+      "file_size": null,
+      "width": 752,
+      "height": 1392
+    }
+  ],
+  "timings": {},
+  "seed": 3693362180,
+  "has_nsfw_concepts": [
+    false
+  ],
+  "prompt": "Apply the style and colors from the reference image. Use the style and visual characteristics from this reference image: https://v3b.fal.media/files/b/0a9d3473/GXaOXV5grTC_U1Nustwvp_garment.jpg"
+}
+[2026-06-06T12:02:59.223Z] [INFO ] [FalService] Output image saved → C:\Users\Tyson\Claude\Projects\fit app\backend\outputs\output-2026-06-06T12-02-57-019e9cd0.jpg
+[2026-06-06T12:02:59.224Z] [INFO ] [HTTP] GET /api/images/jobs/019e9cd0-3402-7491-9ec9-18b2ff59bb29 → 200

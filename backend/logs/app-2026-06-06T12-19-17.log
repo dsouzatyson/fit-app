@@ -1,0 +1,190 @@
+[2026-06-06T12:20:06.923Z] [INFO ] [HTTP] POST /api/images/upload
+[2026-06-06T12:20:06.949Z] [INFO ] [FalService] uploadImage START — person.jpeg 279312 bytes
+[2026-06-06T12:20:07.941Z] [INFO ] [FalService] uploadImage initiate ←
+{
+  "file_url": "https://v3b.fal.media/files/b/0a9d34d8/vF-xxIo4SYEGF2O0hfu_8_person.jpeg",
+  "upload_url": "https://v3b.fal.media/files/b/0a9d34d8/vF-xxIo4SYEGF2O0hfu_8_person.jpeg?signature=rpM8cWf9FBtb_lcm"
+}
+[2026-06-06T12:20:09.662Z] [INFO ] [FalService] uploadImage PUT done — CDN URL: https://v3b.fal.media/files/b/0a9d34d8/vF-xxIo4SYEGF2O0hfu_8_person.jpeg
+[2026-06-06T12:20:09.668Z] [INFO ] [HTTP] POST /api/images/upload → 200
+[2026-06-06T12:20:09.676Z] [INFO ] [HTTP] POST /api/images/upload
+[2026-06-06T12:20:09.681Z] [INFO ] [FalService] uploadImage START — garment.jpg 27429 bytes
+[2026-06-06T12:20:10.029Z] [INFO ] [FalService] uploadImage initiate ←
+{
+  "file_url": "https://v3b.fal.media/files/b/0a9d34d8/UYx0G1j4XzK2P0BdXl7dU_garment.jpg",
+  "upload_url": "https://v3b.fal.media/files/b/0a9d34d8/UYx0G1j4XzK2P0BdXl7dU_garment.jpg?signature=5lOlIdfHRSavSbAP"
+}
+[2026-06-06T12:20:10.963Z] [INFO ] [FalService] uploadImage PUT done — CDN URL: https://v3b.fal.media/files/b/0a9d34d8/UYx0G1j4XzK2P0BdXl7dU_garment.jpg
+[2026-06-06T12:20:10.965Z] [INFO ] [HTTP] POST /api/images/upload → 200
+[2026-06-06T12:20:10.975Z] [INFO ] [HTTP] POST /api/images/generate
+[2026-06-06T12:20:11.010Z] [INFO ] [FalService] generateImage → POST queue
+{
+  "endpoint": "https://queue.fal.run/fal-ai/bytedance/seedream/v4.5/edit",
+  "sourceImageUrl": "https://v3b.fal.media/files/b/0a9d34d8/vF-xxIo4SYEGF2O0hfu_8_person.jpeg",
+  "referenceImageUrl": "https://v3b.fal.media/files/b/0a9d34d8/UYx0G1j4XzK2P0BdXl7dU_garment.jpg",
+  "prompt": "Replace the clothing on the person in Figure 1 with the garment shown in Figure 2. Keep the person's face, skin tone, hair, body shape, and background exactly the same as in Figure 1. Only swap the clothes/outfit."
+}
+[2026-06-06T12:20:11.789Z] [INFO ] [FalService] generateImage ← 200
+{
+  "status": "IN_QUEUE",
+  "request_id": "019e9ce0-632b-7c30-a9b0-9667c7337037",
+  "response_url": "https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037",
+  "status_url": "https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037/status",
+  "cancel_url": "https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037/cancel",
+  "logs": null,
+  "metrics": {},
+  "queue_position": 1
+}
+[2026-06-06T12:20:11.790Z] [INFO ] [FalService] generateImage stored URLs
+{
+  "statusUrl": "https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037/status",
+  "resultUrl": "https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037"
+}
+[2026-06-06T12:20:11.794Z] [INFO ] [HTTP] POST /api/images/generate → 202
+[2026-06-06T12:20:14.800Z] [INFO ] [HTTP] GET /api/images/jobs/019e9ce0-632b-7c30-a9b0-9667c7337037
+[2026-06-06T12:20:14.803Z] [INFO ] [FalService] getJobStatus → GET https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037/status
+[2026-06-06T12:20:15.057Z] [INFO ] [FalService] getJobStatus ← 202
+{
+  "status": "IN_PROGRESS",
+  "request_id": "019e9ce0-632b-7c30-a9b0-9667c7337037",
+  "response_url": "https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037",
+  "status_url": "https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037/status",
+  "cancel_url": "https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037/cancel",
+  "logs": null,
+  "metrics": {}
+}
+[2026-06-06T12:20:15.059Z] [INFO ] [HTTP] GET /api/images/jobs/019e9ce0-632b-7c30-a9b0-9667c7337037 → 200
+[2026-06-06T12:20:18.067Z] [INFO ] [HTTP] GET /api/images/jobs/019e9ce0-632b-7c30-a9b0-9667c7337037
+[2026-06-06T12:20:18.070Z] [INFO ] [FalService] getJobStatus → GET https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037/status
+[2026-06-06T12:20:18.322Z] [INFO ] [FalService] getJobStatus ← 202
+{
+  "status": "IN_PROGRESS",
+  "request_id": "019e9ce0-632b-7c30-a9b0-9667c7337037",
+  "response_url": "https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037",
+  "status_url": "https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037/status",
+  "cancel_url": "https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037/cancel",
+  "logs": null,
+  "metrics": {}
+}
+[2026-06-06T12:20:18.323Z] [INFO ] [HTTP] GET /api/images/jobs/019e9ce0-632b-7c30-a9b0-9667c7337037 → 304
+[2026-06-06T12:20:21.331Z] [INFO ] [HTTP] GET /api/images/jobs/019e9ce0-632b-7c30-a9b0-9667c7337037
+[2026-06-06T12:20:21.332Z] [INFO ] [FalService] getJobStatus → GET https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037/status
+[2026-06-06T12:20:21.588Z] [INFO ] [FalService] getJobStatus ← 202
+{
+  "status": "IN_PROGRESS",
+  "request_id": "019e9ce0-632b-7c30-a9b0-9667c7337037",
+  "response_url": "https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037",
+  "status_url": "https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037/status",
+  "cancel_url": "https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037/cancel",
+  "logs": null,
+  "metrics": {}
+}
+[2026-06-06T12:20:21.589Z] [INFO ] [HTTP] GET /api/images/jobs/019e9ce0-632b-7c30-a9b0-9667c7337037 → 304
+[2026-06-06T12:20:24.596Z] [INFO ] [HTTP] GET /api/images/jobs/019e9ce0-632b-7c30-a9b0-9667c7337037
+[2026-06-06T12:20:24.598Z] [INFO ] [FalService] getJobStatus → GET https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037/status
+[2026-06-06T12:20:24.851Z] [INFO ] [FalService] getJobStatus ← 202
+{
+  "status": "IN_PROGRESS",
+  "request_id": "019e9ce0-632b-7c30-a9b0-9667c7337037",
+  "response_url": "https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037",
+  "status_url": "https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037/status",
+  "cancel_url": "https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037/cancel",
+  "logs": null,
+  "metrics": {}
+}
+[2026-06-06T12:20:24.853Z] [INFO ] [HTTP] GET /api/images/jobs/019e9ce0-632b-7c30-a9b0-9667c7337037 → 304
+[2026-06-06T12:20:27.860Z] [INFO ] [HTTP] GET /api/images/jobs/019e9ce0-632b-7c30-a9b0-9667c7337037
+[2026-06-06T12:20:27.862Z] [INFO ] [FalService] getJobStatus → GET https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037/status
+[2026-06-06T12:20:28.114Z] [INFO ] [FalService] getJobStatus ← 202
+{
+  "status": "IN_PROGRESS",
+  "request_id": "019e9ce0-632b-7c30-a9b0-9667c7337037",
+  "response_url": "https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037",
+  "status_url": "https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037/status",
+  "cancel_url": "https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037/cancel",
+  "logs": null,
+  "metrics": {}
+}
+[2026-06-06T12:20:28.116Z] [INFO ] [HTTP] GET /api/images/jobs/019e9ce0-632b-7c30-a9b0-9667c7337037 → 304
+[2026-06-06T12:20:31.123Z] [INFO ] [HTTP] GET /api/images/jobs/019e9ce0-632b-7c30-a9b0-9667c7337037
+[2026-06-06T12:20:31.125Z] [INFO ] [FalService] getJobStatus → GET https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037/status
+[2026-06-06T12:20:31.383Z] [INFO ] [FalService] getJobStatus ← 202
+{
+  "status": "IN_PROGRESS",
+  "request_id": "019e9ce0-632b-7c30-a9b0-9667c7337037",
+  "response_url": "https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037",
+  "status_url": "https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037/status",
+  "cancel_url": "https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037/cancel",
+  "logs": null,
+  "metrics": {}
+}
+[2026-06-06T12:20:31.385Z] [INFO ] [HTTP] GET /api/images/jobs/019e9ce0-632b-7c30-a9b0-9667c7337037 → 304
+[2026-06-06T12:20:34.392Z] [INFO ] [HTTP] GET /api/images/jobs/019e9ce0-632b-7c30-a9b0-9667c7337037
+[2026-06-06T12:20:34.394Z] [INFO ] [FalService] getJobStatus → GET https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037/status
+[2026-06-06T12:20:34.646Z] [INFO ] [FalService] getJobStatus ← 202
+{
+  "status": "IN_PROGRESS",
+  "request_id": "019e9ce0-632b-7c30-a9b0-9667c7337037",
+  "response_url": "https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037",
+  "status_url": "https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037/status",
+  "cancel_url": "https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037/cancel",
+  "logs": null,
+  "metrics": {}
+}
+[2026-06-06T12:20:34.647Z] [INFO ] [HTTP] GET /api/images/jobs/019e9ce0-632b-7c30-a9b0-9667c7337037 → 304
+[2026-06-06T12:20:37.655Z] [INFO ] [HTTP] GET /api/images/jobs/019e9ce0-632b-7c30-a9b0-9667c7337037
+[2026-06-06T12:20:37.657Z] [INFO ] [FalService] getJobStatus → GET https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037/status
+[2026-06-06T12:20:37.910Z] [INFO ] [FalService] getJobStatus ← 202
+{
+  "status": "IN_PROGRESS",
+  "request_id": "019e9ce0-632b-7c30-a9b0-9667c7337037",
+  "response_url": "https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037",
+  "status_url": "https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037/status",
+  "cancel_url": "https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037/cancel",
+  "logs": null,
+  "metrics": {}
+}
+[2026-06-06T12:20:37.912Z] [INFO ] [HTTP] GET /api/images/jobs/019e9ce0-632b-7c30-a9b0-9667c7337037 → 304
+[2026-06-06T12:20:40.919Z] [INFO ] [HTTP] GET /api/images/jobs/019e9ce0-632b-7c30-a9b0-9667c7337037
+[2026-06-06T12:20:40.921Z] [INFO ] [FalService] getJobStatus → GET https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037/status
+[2026-06-06T12:20:41.173Z] [INFO ] [FalService] getJobStatus ← 202
+{
+  "status": "IN_PROGRESS",
+  "request_id": "019e9ce0-632b-7c30-a9b0-9667c7337037",
+  "response_url": "https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037",
+  "status_url": "https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037/status",
+  "cancel_url": "https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037/cancel",
+  "logs": null,
+  "metrics": {}
+}
+[2026-06-06T12:20:41.175Z] [INFO ] [HTTP] GET /api/images/jobs/019e9ce0-632b-7c30-a9b0-9667c7337037 → 304
+[2026-06-06T12:20:44.182Z] [INFO ] [HTTP] GET /api/images/jobs/019e9ce0-632b-7c30-a9b0-9667c7337037
+[2026-06-06T12:20:44.183Z] [INFO ] [FalService] getJobStatus → GET https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037/status
+[2026-06-06T12:20:44.436Z] [INFO ] [FalService] getJobStatus ← 200
+{
+  "status": "COMPLETED",
+  "request_id": "019e9ce0-632b-7c30-a9b0-9667c7337037",
+  "response_url": "https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037",
+  "status_url": "https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037/status",
+  "cancel_url": "https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037/cancel",
+  "logs": null,
+  "metrics": {
+    "inference_time": 29.746089935302734
+  }
+}
+[2026-06-06T12:20:44.438Z] [INFO ] [FalService] fetchResult → GET https://queue.fal.run/fal-ai/bytedance/requests/019e9ce0-632b-7c30-a9b0-9667c7337037
+[2026-06-06T12:20:44.693Z] [INFO ] [FalService] fetchResult ←
+{
+  "images": [
+    {
+      "url": "https://v3b.fal.media/files/b/0a9d34dc/WsUkZekO62vqOHS7EbQjl_9d5b7340244c4bc49b0342c88ec14e71.png",
+      "content_type": "image/png",
+      "file_name": "9d5b7340244c4bc49b0342c88ec14e71.png",
+      "file_size": 5322446,
+      "width": null,
+      "height": null
+    }
+  ]
+}
+[2026-06-06T12:20:47.317Z] [INFO ] [FalService] Output image saved → C:\Users\Tyson\Claude\Projects\fit app\backend\outputs\output-2026-06-06T12-20-44-019e9ce0.png
+[2026-06-06T12:20:47.319Z] [INFO ] [HTTP] GET /api/images/jobs/019e9ce0-632b-7c30-a9b0-9667c7337037 → 200
