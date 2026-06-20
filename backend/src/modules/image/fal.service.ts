@@ -184,11 +184,15 @@ export class FalService {
     const { sourceImageUrl, referenceImageUrl, prompt, aspectRatio } = params;
 
     // Clothing-only transfer: apply garment from reference image, preserve everything else.
-    // Figure 1 = person (source), Figure 2 = garment (reference)
+    // Figure 1 = person (source), Figure 2 = garment (reference).
+    // Explicit negative constraints are repeated to maximise model adherence.
     const fullPrompt =
-      `Replace the clothing on the person in Figure 1 with the garment shown in Figure 2. ` +
-      `Keep the person's face, skin tone, hair, body shape, and background exactly the same as in Figure 1. ` +
-      `Only swap the clothes/outfit.`;
+      `Virtual try-on: dress the person from Figure 1 in the garment shown in Figure 2. ` +
+      `CRITICAL — do NOT alter any of the following: the person's face, facial features, eyes, nose, mouth, ` +
+      `skin tone, complexion, hair colour, hair style, hair length, eyebrows, expression, head position, ` +
+      `body shape, body proportions, pose, or background. ` +
+      `The ONLY change permitted is replacing the clothing/outfit with the garment from Figure 2. ` +
+      `Preserve the person's identity completely. The result must look like the same person wearing different clothes.`;
 
     const body: any = {
       prompt: fullPrompt,

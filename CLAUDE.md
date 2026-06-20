@@ -121,11 +121,15 @@ If port 3000 is already in use: `lsof -ti :3000 | xargs kill -9`
 - **Upload:** POST to `https://rest.alpha.fal.ai/storage/upload/initiate` → PUT bytes to presigned URL
 - **Critical:** `status_url` and `response_url` are captured from the submit response and stored in `jobUrls` Map in `FalService`. Do NOT construct these URLs manually — caused 405 errors previously.
 
-**Hardcoded generation prompt (in fal.service.ts):**
+**Hardcoded generation prompt (in fal.service.ts) — strict identity preservation:**
 ```
-Replace the clothing on the person in Figure 1 with the garment shown in Figure 2.
-Keep the person's face, skin tone, hair, body shape, and background exactly the same as in Figure 1.
-Only swap the clothes/outfit.
+Virtual try-on: dress the person from Figure 1 in the garment shown in Figure 2.
+CRITICAL — do NOT alter any of the following: the person's face, facial features, eyes, nose,
+mouth, skin tone, complexion, hair colour, hair style, hair length, eyebrows, expression, head
+position, body shape, body proportions, pose, or background.
+The ONLY change permitted is replacing the clothing/outfit with the garment from Figure 2.
+Preserve the person's identity completely. The result must look like the same person wearing
+different clothes.
 ```
 
 ---
@@ -169,14 +173,19 @@ All feature flags live here — change the value and rebuild, no Kotlin edits ne
 
 **Screen flow (3 steps):**
 
-### Step 1: Garment
-- `ENABLE_GALLERY_PICKER=false` → only "PASTE URL" / "PRODUCT URL" field shown (Gallery code preserved, re-enable via flag)
-- Share from Amazon: `ACTION_SEND` intent → backend scrapes `og:image` → product card auto-populated
-- "P R O C E E D" full-width gold CTA bar at bottom
+### Step 1: Add Product URL
+- Header: "ADD PRODUCT URL"
+- `ENABLE_GALLERY_PICKER=false` → only "PRODUCT URL" field shown (Gallery code preserved, re-enable via flag)
+- User pastes an Amazon URL → taps **LOAD GARMENT** → backend calls `extract-product` (same as share flow) → product card auto-populated
+- Share from Amazon: `ACTION_SEND` intent → product card auto-populated immediately (no LOAD button needed)
+- **PROCEED enabled only when `referenceMediaId != null`** — i.e. the image has been extracted and uploaded to fal.ai. Typing a URL alone is not enough.
+- **"P R O C E E D" floating button**: `BoxWithConstraints`, positioned 5% above bottom, gold gradient, non-draggable
 
 ### Step 2: Try It On
 - Underline-style text fields (no bordered boxes)
 - Person photo persisted across app kills via `PersonPhotoStore`
+- **Animated scroll-down hint** (bouncing gold ↓ arrow) below the photo picker, signalling more content below
+- **Model fixed to GPT Image 2** (`gpt_image_2`) — model dropdown removed from UI; user cannot change it
 - "GENERATE LOOK" gold CTA
 - Non-dismissable progress dialog: large gold `%` counter + thin animated gold progress line
 
@@ -184,6 +193,7 @@ All feature flags live here — change the value and rebuild, no Kotlin edits ne
 - Before/After side-by-side (gold border on After panel)
 - Full result image below
 - **Floating "REDIRECT TO MAIN APP" button**: positioned 5% above the bottom of the screen, non-draggable, elevated with an emerald drop shadow
+- **Button locked until generated image fully loads** — shows grey "LOADING IMAGE…" + spinner while `SubcomposeAsyncImage` is loading; turns emerald and tappable once `onSuccess` fires
 - Scroll content has bottom padding to stay clear of the floating button
 
 ---
@@ -222,11 +232,16 @@ Adaptive icon (`mipmap-anydpi-v26/ic_launcher.xml`) uses `ic_launcher_fg` as for
 - **`higgsfield.service.ts` kept but not wired** — `image.module.ts` only registers `FalService`
 - **Product image extraction** — uses `og:image` meta tag (works across Amazon, Flipkart, Myntra etc.); strips Amazon size suffixes for max resolution; falls back to `data-old-hires` attribute
 - **Person photo persistence** — gallery `content://` URIs are temporary grants; `PersonPhotoStore` copies bytes to `filesDir` and saves the path to SharedPreferences so the photo survives process death
-- **`referenceMediaId` short-circuit** — when garment is loaded via share (already uploaded to fal.ai), `generate()` skips the upload step entirely and uses the stored mediaId directly
+- **Person photo cache bust** — `PersonPhotoStore` always writes to the same filename; `setSourceUri()` appends `?t=<timestamp>` to the URI so Coil sees a new cache key and reloads the fresh image on every selection
+- **`referenceMediaId` short-circuit** — when garment is loaded via share or LOAD GARMENT button (already uploaded to fal.ai), `generate()` skips the upload step entirely and uses the stored mediaId directly
+- **PROCEED gate** — `garmentReady` only true when `referenceMediaId != null`; raw URL text does not enable the button; user must tap LOAD GARMENT and wait for extraction to complete
+- **LOAD GARMENT button** — appears in URL mode once a valid http/https URL is entered; calls `loadGarmentFromShareUrl()` (same backend path as the share intent flow)
 - **Gallery picker config** — `ENABLE_GALLERY_PICKER=false` hides the UI tab but all Gallery Kotlin code is preserved and re-activates when the flag is flipped
 - **Affiliate tag safety** — third-party `tag` params are never overwritten; our tag is only injected when no `tag` param is present
 - **fileLog for redirect events** — NestJS `Logger` only goes to stdout; `fileLog` writes to both stdout and the timestamped log file
-- **Floating CTA** — `BoxWithConstraints` used in ResultStep to position the button at `maxHeight * 0.05f` from the bottom; `Modifier.clickable` only (no drag gesture), so position is fixed
+- **Floating CTAs** — `BoxWithConstraints` used in both GarmentStep (PROCEED) and ResultStep (REDIRECT) to position buttons at `maxHeight * 0.05f` from the bottom; `Modifier.clickable` only (no drag gesture), position is fixed
+- **Result image gate** — `SubcomposeAsyncImage` used in the AFTER panel; `onSuccess` sets `imageReady = true`; redirect button is disabled and grey until then
+- **Model locked** — `selectedModel` defaults to `"gpt_image_2"` (GPT Image 2); model dropdown removed from UI entirely
 
 ---
 
@@ -246,12 +261,16 @@ Adaptive icon (`mipmap-anydpi-v26/ic_launcher.xml`) uses `ic_launcher_fg` as for
 | Redirect logs missing from log file | Replaced NestJS `Logger` with `fileLog` in the log-redirect controller endpoint |
 | ValidationPipe rejecting log-redirect body | Added `class-validator` decorators (`@IsString`, `@IsBoolean`, `@IsOptional`) to `LogRedirectDto` |
 | `Theme.Material.NoTitleBar` AAPT error | Reverted to valid parent `android:Theme.Material.Light.NoActionBar` in themes.xml |
+| Manual URL input not fetching garment image | Added LOAD GARMENT button; calls `extract-product` endpoint (same as share flow); raw URL no longer used as image source |
+| PROCEED enabled before image ready | `garmentReady` now requires `referenceMediaId != null`; URL text alone no longer enables proceed |
+| Person photo not updating preview on change | `PersonPhotoStore` overwrites same filename; `setSourceUri()` appends `?t=<timestamp>` to bust Coil's memory cache |
+| Redirect button tappable before image renders | `SubcomposeAsyncImage` with `onSuccess` gate; button is grey + locked until image fully loads |
+| AI altering face/hair/identity in output | Rewrote generation prompt with explicit CRITICAL constraint list naming every preserved attribute |
 
 ---
 
 ## Pending
 
-- [ ] Test APK on physical device (set `BACKEND_URL` to LAN IP, e.g. `http://192.168.x.x:3000`)
 - [ ] Deploy backend or set up ngrok for remote testing
 - [ ] Add image share sheet on result screen (in addition to gallery save)
 - [ ] Handle Amazon short-link redirect on devices without Amazon app installed

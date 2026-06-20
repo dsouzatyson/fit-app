@@ -19,12 +19,12 @@ android {
         versionName = "1.0"
 
         // Emulator: 10.0.2.2 maps to host localhost. Physical device: use your LAN IP.
-        buildConfigField("String", "BACKEND_URL", "\"http://10.0.2.2:3000\"")
+        buildConfigField("String", "BACKEND_URL", "\"http://192.168.0.91:3000\"")
         // ── Mock flag ──────────────────────────────────────────────────────────
         // Set to true to skip fal.ai calls during UI testing (saves money).
         // The person photo is used as the fake result so the full UI flow works.
         // Flip to false before any real demo or production build.
-        buildConfigField("Boolean", "MOCK_GENERATION", "true")
+        buildConfigField("Boolean", "MOCK_GENERATION", "false")
         // ── Gallery picker ─────────────────────────────────────────────────────
         // Set to false to hide the Gallery tab on the garment screen.
         // Code is preserved — flip to true to re-enable without any changes.

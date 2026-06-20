@@ -43,7 +43,7 @@ data class EditorUiState(
     val garmentLoading: Boolean = false,
     // Prompt / model
     val prompt: String = "Replace the clothing on the person in Figure 1 with the garment shown in Figure 2. Keep the person's face, skin tone, hair, body shape, and background exactly the same. Only swap the clothes.",
-    val selectedModel: String = "seedream_v4_5",
+    val selectedModel: String = "gpt_image_2",
     // Generation progress
     val phase: Phase = Phase.Idle,
     val loadingProgress: Float = 0f,            // 0..1
@@ -78,9 +78,14 @@ class EditorViewModel @Inject constructor(
     val state = _state.asStateFlow()
 
     fun setSourceUri(uri: Uri) {
-        // Copy to internal storage so the URI survives process death
+        // Copy to internal storage so the URI survives process death.
+        // Append a timestamp query param so Coil doesn't serve the stale cached image
+        // when the user replaces the photo (the file path is always the same).
         val stableUri = photoStore.save(uri)
-        _state.update { it.copy(sourceUri = stableUri, error = null) }
+        val cacheBustedUri = stableUri.buildUpon()
+            .appendQueryParameter("t", System.currentTimeMillis().toString())
+            .build()
+        _state.update { it.copy(sourceUri = cacheBustedUri, error = null) }
     }
     fun setReferenceUri(uri: Uri) = _state.update { it.copy(referenceUri = uri, error = null) }
     fun setReferenceMode(mode: ReferenceMode) = _state.update { it.copy(referenceMode = mode, error = null) }

@@ -51,6 +51,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import com.fitapp.imageeditor.ui.theme.Ash
 import com.fitapp.imageeditor.ui.theme.Cream
 import com.fitapp.imageeditor.ui.theme.Emerald
@@ -90,24 +91,24 @@ fun EditorScreen(
 
 @Composable
 private fun GarmentStep(state: EditorUiState, viewModel: EditorViewModel) {
+    // Proceed is only enabled once the image has been extracted + uploaded (mediaId set).
+    // Typing a URL is not enough — the user must tap LOAD and wait for extraction.
     val garmentReady = state.referenceMediaId != null ||
-        (state.referenceMode == ReferenceMode.Gallery && state.referenceUri != null) ||
-        (state.referenceMode == ReferenceMode.Url && state.referenceUrl.isNotBlank())
+        (state.referenceMode == ReferenceMode.Gallery && state.referenceUri != null)
 
-    Scaffold(
-        containerColor = Obsidian,
-        bottomBar = {
-            LuxuryPrimaryButton(
-                label = "P R O C E E D",
-                onClick = viewModel::proceedToPersonStep,
-                enabled = garmentReady && !state.garmentLoading,
-            )
-        }
-    ) { padding ->
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Obsidian)
+    ) {
+        val floatBottomOffset = maxHeight * 0.05f
+        val buttonHeight = 60.dp
+        val scrollBottomPad = floatBottomOffset + buttonHeight
+
+        // ── Scrollable content ────────────────────────────────────────────────
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
                 .verticalScroll(rememberScrollState())
         ) {
             // Editorial header
@@ -125,14 +126,14 @@ private fun GarmentStep(state: EditorUiState, viewModel: EditorViewModel) {
                 )
                 Spacer(Modifier.height(10.dp))
                 Text(
-                    text = "CHOOSE YOUR\nGARMENT",
+                    text = "ADD PRODUCT URL",
                     style = MaterialTheme.typography.displayLarge,
                     color = Cream,
                     lineHeight = 42.sp,
                 )
                 Spacer(Modifier.height(12.dp))
                 Text(
-                    text = "Select a piece to try on virtually",
+                    text = "Paste an Amazon product link to preview the garment",
                     style = MaterialTheme.typography.bodyMedium,
                     color = Ash,
                 )
@@ -154,12 +155,13 @@ private fun GarmentStep(state: EditorUiState, viewModel: EditorViewModel) {
                         )
                     else ->
                         GarmentManualPicker(
-                            mode       = state.referenceMode,
-                            uri        = state.referenceUri,
-                            url        = state.referenceUrl,
+                            mode         = state.referenceMode,
+                            uri          = state.referenceUri,
+                            url          = state.referenceUrl,
                             onModeChange = viewModel::setReferenceMode,
-                            onPicked   = viewModel::setReferenceUri,
-                            onUrlChange = viewModel::setReferenceUrl,
+                            onPicked     = viewModel::setReferenceUri,
+                            onUrlChange  = viewModel::setReferenceUrl,
+                            onLoadUrl    = viewModel::loadGarmentFromShareUrl,
                         )
                 }
             }
@@ -172,7 +174,46 @@ private fun GarmentStep(state: EditorUiState, viewModel: EditorViewModel) {
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
+            // Bottom padding so content scrolls clear of the floating button
+            Spacer(Modifier.height(scrollBottomPad))
+        }
+
+        // ── Floating PROCEED button — fixed, non-draggable ────────────────────
+        val enabled = garmentReady && !state.garmentLoading
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .offset(y = -floatBottomOffset)
+                .padding(horizontal = 36.dp)
+                .shadow(
+                    elevation    = 24.dp,
+                    shape        = RoundedCornerShape(4.dp),
+                    ambientColor = Gold.copy(alpha = 0.25f),
+                    spotColor    = Gold.copy(alpha = 0.4f),
+                )
+                .background(
+                    brush = if (enabled)
+                        Brush.horizontalGradient(listOf(Gold, GoldLight, Gold))
+                    else
+                        Brush.horizontalGradient(listOf(Steel, Steel)),
+                    shape = RoundedCornerShape(4.dp),
+                )
+                .clip(RoundedCornerShape(4.dp))
+                .clickable(
+                    enabled           = enabled,
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication        = null,
+                    onClick           = viewModel::proceedToPersonStep,
+                )
+                .padding(horizontal = 28.dp, vertical = 18.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                "P R O C E E D",
+                style        = MaterialTheme.typography.labelLarge,
+                color        = if (enabled) Obsidian else Ash,
+                letterSpacing = 2.5.sp,
+            )
         }
     }
 }
@@ -267,6 +308,8 @@ private fun PersonStep(state: EditorUiState, viewModel: EditorViewModel) {
                     onPicked = viewModel::setSourceUri,
                 )
 
+                ScrollDownHint()
+
                 // Edit instruction — underline style
                 LuxuryTextField(
                     value       = state.prompt,
@@ -274,12 +317,6 @@ private fun PersonStep(state: EditorUiState, viewModel: EditorViewModel) {
                     label       = "EDIT INSTRUCTION",
                     enabled     = !isProcessing,
                     minLines    = 2,
-                )
-
-                LuxuryModelDropdown(
-                    selected = state.selectedModel,
-                    onSelect = viewModel::setModel,
-                    enabled  = !isProcessing,
                 )
 
                 if (state.phase in listOf(Phase.Idle, Phase.Error)) {
@@ -310,6 +347,8 @@ private fun ResultStep(state: EditorUiState, viewModel: EditorViewModel) {
     val coroutineScope = rememberCoroutineScope()
     var saving by remember { mutableStateOf(false) }
     var saveError by remember { mutableStateOf<String?>(null) }
+    // Redirect button is locked until the generated image has fully loaded in the viewer
+    var imageReady by remember { mutableStateOf(false) }
 
     // Redirect action — extracted so both the button and its logic stay in one place
     val onRedirect: () -> Unit = {
@@ -442,14 +481,40 @@ private fun ResultStep(state: EditorUiState, viewModel: EditorViewModel) {
                             .fillMaxWidth()
                             .aspectRatio(0.75f)
                             .background(Graphite)
-                            .border(1.dp, Gold.copy(alpha = 0.4f))
+                            .border(1.dp, Gold.copy(alpha = 0.4f)),
+                        contentAlignment = Alignment.Center,
                     ) {
                         if (state.outputUrl != null) {
-                            AsyncImage(
-                                model = state.outputUrl,
+                            SubcomposeAsyncImage(
+                                model              = state.outputUrl,
                                 contentDescription = "Result",
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize(),
+                                contentScale       = ContentScale.Crop,
+                                modifier           = Modifier.fillMaxSize(),
+                                loading = {
+                                    Box(
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                                        ) {
+                                            CircularProgressIndicator(
+                                                modifier    = Modifier.size(28.dp),
+                                                strokeWidth = 1.5.dp,
+                                                color       = Gold,
+                                                trackColor  = Steel,
+                                            )
+                                            Text(
+                                                "LOADING…",
+                                                style        = MaterialTheme.typography.labelSmall,
+                                                color        = Ash,
+                                                letterSpacing = 1.5.sp,
+                                            )
+                                        }
+                                    }
+                                },
+                                onSuccess = { imageReady = true },
                             )
                         }
                     }
@@ -491,26 +556,29 @@ private fun ResultStep(state: EditorUiState, viewModel: EditorViewModel) {
         }
 
         // ── Floating redirect button — fixed, non-draggable ───────────────────
+        // Disabled (greyed out with spinner) until the generated image has fully loaded.
+        val buttonEnabled = imageReady && !saving
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .offset(y = -floatBottomOffset)
                 .padding(horizontal = 36.dp)
                 .shadow(
-                    elevation       = 24.dp,
+                    elevation       = if (buttonEnabled) 24.dp else 4.dp,
                     shape           = RoundedCornerShape(4.dp),
-                    ambientColor    = Emerald.copy(alpha = 0.4f),
-                    spotColor       = Emerald.copy(alpha = 0.6f),
+                    ambientColor    = Emerald.copy(alpha = if (buttonEnabled) 0.4f else 0.1f),
+                    spotColor       = Emerald.copy(alpha = if (buttonEnabled) 0.6f else 0.1f),
                 )
                 .background(
-                    brush = Brush.horizontalGradient(
-                        listOf(Color(0xFF1B5E20), Emerald, Color(0xFF2E7D32))
-                    ),
+                    brush = if (buttonEnabled)
+                        Brush.horizontalGradient(listOf(Color(0xFF1B5E20), Emerald, Color(0xFF2E7D32)))
+                    else
+                        Brush.horizontalGradient(listOf(Steel, Steel)),
                     shape = RoundedCornerShape(4.dp),
                 )
                 .clip(RoundedCornerShape(4.dp))
                 .clickable(
-                    enabled           = !saving,
+                    enabled           = buttonEnabled,
                     interactionSource = remember { MutableInteractionSource() },
                     indication        = null,
                     onClick           = onRedirect,
@@ -518,8 +586,8 @@ private fun ResultStep(state: EditorUiState, viewModel: EditorViewModel) {
                 .padding(horizontal = 28.dp, vertical = 18.dp),
             contentAlignment = Alignment.Center,
         ) {
-            if (saving) {
-                Row(
+            when {
+                saving -> Row(
                     verticalAlignment      = Alignment.CenterVertically,
                     horizontalArrangement  = Arrangement.spacedBy(12.dp),
                 ) {
@@ -535,8 +603,24 @@ private fun ResultStep(state: EditorUiState, viewModel: EditorViewModel) {
                         letterSpacing = 2.sp,
                     )
                 }
-            } else {
-                Text(
+                !imageReady -> Row(
+                    verticalAlignment     = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    CircularProgressIndicator(
+                        modifier    = Modifier.size(14.dp),
+                        strokeWidth = 1.5.dp,
+                        color       = Ash,
+                        trackColor  = Iron,
+                    )
+                    Text(
+                        "LOADING IMAGE…",
+                        style        = MaterialTheme.typography.labelLarge,
+                        color        = Ash,
+                        letterSpacing = 2.sp,
+                    )
+                }
+                else -> Text(
                     "↗  REDIRECT TO MAIN APP",
                     style        = MaterialTheme.typography.labelLarge,
                     color        = Cream,
@@ -599,6 +683,41 @@ private fun appendAffiliateTag(url: String): String {
 }
 
 // ── Luxury Design Components ──────────────────────────────────────────────────
+
+/** Animated scroll-down hint shown below the person photo picker */
+@Composable
+private fun ScrollDownHint() {
+    val infiniteTransition = rememberInfiniteTransition(label = "scroll_hint")
+    val offsetY by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue  = 6f,
+        animationSpec = infiniteRepeatable(
+            animation  = tween(700, easing = EaseInOut),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "bounce",
+    )
+    Column(
+        modifier            = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp, bottom = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(
+            text   = "scroll for more options",
+            style  = MaterialTheme.typography.labelSmall,
+            color  = Ash.copy(alpha = 0.6f),
+            letterSpacing = 1.sp,
+        )
+        Text(
+            text     = "↓",
+            style    = MaterialTheme.typography.labelLarge,
+            color    = Gold.copy(alpha = 0.7f),
+            modifier = Modifier.offset(y = offsetY.dp),
+        )
+    }
+}
 
 /** 1px gold-tinted horizontal rule */
 @Composable
@@ -788,6 +907,7 @@ private fun GarmentManualPicker(
     onModeChange: (ReferenceMode) -> Unit,
     onPicked: (Uri) -> Unit,
     onUrlChange: (String) -> Unit,
+    onLoadUrl: (String) -> Unit,
 ) {
     val galleryEnabled = BuildConfig.ENABLE_GALLERY_PICKER
 
@@ -899,20 +1019,31 @@ private fun GarmentManualPicker(
                     placeholder   = "https://www.amazon.in/dp/…",
                     keyboardType  = KeyboardType.Uri,
                 )
-                if (url.startsWith("http://") || url.startsWith("https://")) {
-                    Spacer(Modifier.height(4.dp))
+                val canLoad = url.startsWith("http://") || url.startsWith("https://")
+                if (canLoad) {
+                    Spacer(Modifier.height(12.dp))
+                    // LOAD button — triggers extract-product on backend (same as share flow)
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .aspectRatio(0.85f)
-                            .background(Graphite)
-                            .border(1.dp, Gold.copy(alpha = 0.4f)),
+                            .background(
+                                brush = Brush.horizontalGradient(listOf(Gold, GoldLight, Gold)),
+                                shape = RoundedCornerShape(4.dp),
+                            )
+                            .clip(RoundedCornerShape(4.dp))
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication        = null,
+                                onClick           = { onLoadUrl(url) },
+                            )
+                            .padding(vertical = 14.dp),
+                        contentAlignment = Alignment.Center,
                     ) {
-                        AsyncImage(
-                            model              = url,
-                            contentDescription = "Garment preview",
-                            contentScale       = ContentScale.Fit,
-                            modifier           = Modifier.fillMaxSize(),
+                        Text(
+                            "LOAD GARMENT",
+                            style        = MaterialTheme.typography.labelLarge,
+                            color        = Obsidian,
+                            letterSpacing = 2.sp,
                         )
                     }
                 }
