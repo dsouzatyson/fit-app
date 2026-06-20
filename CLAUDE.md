@@ -1,9 +1,9 @@
-# Fit App — Claude Instructions
+# TryOnMe — Claude Instructions
 
 ## What This App Does
 AI-powered virtual try-on: user selects a person photo + a garment photo → backend calls fal.ai Seedream v4.5 → returns person wearing the garment. Face, skin tone, hair, and background are preserved — only clothes change.
 
-Primary flow: share a product link from Amazon → app extracts the garment image automatically → user adds their photo → AI swaps the clothing → result is saved to gallery and user is redirected back to Amazon.
+Primary flow: share a product link from Amazon → app extracts the garment image automatically → user adds their photo → AI swaps the clothing → result is saved to gallery → user is redirected back to Amazon with an affiliate tag appended to the URL.
 
 ---
 
@@ -24,32 +24,45 @@ Primary flow: share a product link from Amazon → app extracts the garment imag
 fit-app/
 ├── backend/
 │   ├── src/modules/image/
-│   │   ├── fal.service.ts            ← ACTIVE AI client (fal.ai)
-│   │   ├── higgsfield.service.ts     ← INACTIVE, kept for reference only
-│   │   ├── image.controller.ts       ← all HTTP endpoints
+│   │   ├── fal.service.ts              ← ACTIVE AI client (fal.ai)
+│   │   ├── higgsfield.service.ts       ← INACTIVE, kept for reference only
+│   │   ├── image.controller.ts         ← all HTTP endpoints
 │   │   ├── image.service.ts
 │   │   └── dto/
 │   │       ├── generate.dto.ts
-│   │       ├── upload-url.dto.ts     ← NEW
-│   │       └── extract-product.dto.ts ← NEW
-│   ├── .env                          ← FAL_API_KEY + PORT (gitignored)
+│   │       ├── upload-url.dto.ts
+│   │       ├── extract-product.dto.ts
+│   │       └── log-redirect.dto.ts     ← affiliate redirect logging
+│   ├── src/common/
+│   │   └── file-logger.ts              ← fileLog utility (stdout + file)
+│   ├── .env                            ← FAL_API_KEY + PORT (gitignored)
 │   ├── .env.example
 │   └── package.json
 ├── android/
-│   ├── app/src/main/java/com/fitapp/imageeditor/
-│   │   ├── network/ApiService.kt
-│   │   ├── data/
-│   │   │   ├── ImageRepository.kt
-│   │   │   └── PersonPhotoStore.kt   ← NEW: persists person photo across restarts
-│   │   ├── di/NetworkModule.kt
-│   │   └── ui/editor/
-│   │       ├── EditorScreen.kt       ← 3-step wizard (Garment → Person → Result)
-│   │       └── EditorViewModel.kt
-│   ├── app/src/main/AndroidManifest.xml ← includes ACTION_SEND share target
-│   └── local.properties              ← sdk.dir (gitignored)
-├── test-ui.html                      ← Gallery + URL tab for garment
-├── start-backend.command             ← double-click to install + start backend
-└── CLAUDE.md                         ← this file
+│   └── app/src/main/
+│       ├── AndroidManifest.xml         ← app name "TryOnMe", share target
+│       ├── res/
+│       │   ├── mipmap-mdpi/            ← ic_launcher.png, ic_launcher_fg.png
+│       │   ├── mipmap-hdpi/
+│       │   ├── mipmap-xhdpi/
+│       │   ├── mipmap-xxhdpi/
+│       │   ├── mipmap-xxxhdpi/
+│       │   ├── mipmap-anydpi-v26/      ← adaptive icon XML (API 26+)
+│       │   └── values/themes.xml       ← dark base theme (#080808)
+│       └── java/com/fitapp/imageeditor/
+│           ├── network/ApiService.kt
+│           ├── data/
+│           │   ├── ImageRepository.kt
+│           │   └── PersonPhotoStore.kt ← persists person photo across restarts
+│           ├── di/NetworkModule.kt
+│           └── ui/
+│               ├── theme/Theme.kt      ← luxury dark palette + typography
+│               └── editor/
+│                   ├── EditorScreen.kt ← 3-step wizard + all UI components
+│                   └── EditorViewModel.kt
+├── test-ui.html                        ← Gallery + URL tab for garment
+├── start-backend.command               ← double-click to install + start backend
+└── CLAUDE.md                           ← this file
 ```
 
 ---
@@ -81,10 +94,10 @@ If port 3000 is already in use: `lsof -ti :3000 | xargs kill -9`
 5. Upload test images to emulator by dragging files onto the emulator window
 
 ### Android Share Flow (main use case)
-1. Open Amazon app → find a garment → tap Share → select **AI Image Editor**
+1. Open Amazon app → find a garment → tap Share → select **TryOnMe**
 2. App opens on the Garment step with the product image auto-extracted
 3. Tap Proceed → add person photo → Generate
-4. On result screen, tap **Redirect to main app** — saves image to gallery + returns to Amazon
+4. On result screen, tap **REDIRECT TO MAIN APP** — saves image to gallery + appends affiliate tag + returns to Amazon
 
 ---
 
@@ -97,6 +110,7 @@ If port 3000 is already in use: `lsof -ti :3000 | xargs kill -9`
 | POST | `/api/images/extract-product` | Scrape a product page URL, extract main image, upload to fal.ai. Body: `{ url }`. Returns `{ mediaId, imageUrl, productTitle }` |
 | POST | `/api/images/generate` | Submit job. Body: `{ sourceMediaId, referenceMediaId, prompt }`. Returns `{ jobId }` |
 | GET | `/api/images/jobs/:jobId` | Poll status. Returns `{ jobId, status, outputUrl }` |
+| POST | `/api/images/log-redirect` | Log redirect event. Body: `{ originalUrl, finalUrl, affiliateTagAdded, affiliateTag? }` |
 
 ---
 
@@ -132,44 +146,69 @@ sdk.dir=/Users/Tyson/Library/Android/Sdk
 
 ---
 
-## Android App — UI Flow (3 Steps)
+## Android Build Config (`app/build.gradle.kts`)
 
-### Step 1: Garment
-- Opens automatically when app launches or receives a share intent
-- **Share from Amazon**: `ACTION_SEND` intent delivers the URL → backend scrapes `og:image` → product card auto-populated
-- **Manual**: Gallery tab (file picker) or URL tab (paste direct image URL)
-- "Proceed →" button enabled once a garment is ready
+All feature flags live here — change the value and rebuild, no Kotlin edits needed.
 
-### Step 2: Try It On
-- Garment summary thumbnail shown at top
-- Person photo picker — tap to select; shows "Choose another image" overlay after selection
-- Person photo is **persisted across app kills** via `PersonPhotoStore` (copied to `filesDir/person_photo.jpg`, path saved to SharedPreferences)
-- Edit instruction + model dropdown
-- Generate button → triggers progress dialog
-
-### Step 3: Result
-- Before/After side-by-side comparison
-- Full result image below
-- **"Redirect to main app"** (green button): saves image to `Pictures/FitApp/` in device gallery → opens original Amazon share URL via `ACTION_VIEW`
-
-### Generation Progress Dialog
-- Non-dismissable `Dialog` (back press and outside tap disabled)
-- Circular progress indicator with live % in centre
-- Linear progress bar
-- Messages cycle: Uploading → Swapping clothes → Matching fabric → Preserving features → Refining edges → Almost there…
+| Field | Default | Purpose |
+|-------|---------|---------|
+| `BACKEND_URL` | `http://10.0.2.2:3000` | Backend host. Use LAN IP for physical device |
+| `MOCK_GENERATION` | `true` | Skip fal.ai calls; person photo used as fake result. Flip to `false` before real demo |
+| `ENABLE_GALLERY_PICKER` | `false` | Show/hide Gallery tab on garment screen. Gallery code is preserved when `false` |
+| `AFFILIATE_TAG` | `viralcartf031-21` | Amazon Associates tag appended to redirect URL. Set `""` to disable |
 
 ---
 
-## Mock / Debug Mode
+## Android App — UI Design
 
-Controlled by `BuildConfig.MOCK_GENERATION` in `android/app/build.gradle.kts`:
+**Theme:** Luxury dark editorial style defined in `ui/theme/Theme.kt`:
+- **Palette**: Obsidian `#080808` bg · Gold `#C8A96E` accent · Cream `#F4EEE4` text
+- **Typography**: Tight display headings, wide-tracked ALL CAPS labels (2–2.5sp letter-spacing)
+- **Shapes**: Minimal (2–8dp) — sharp, architectural feel
+- Dynamic Material You disabled — fixed brand palette always applied
 
-```kotlin
-buildConfigField("Boolean", "MOCK_GENERATION", "true")   // test UI, no API cost
-buildConfigField("Boolean", "MOCK_GENERATION", "false")  // real fal.ai generation
-```
+**Screen flow (3 steps):**
 
-When `true`: skips all network calls, simulates the full progress animation (~8s), uses the person's own photo as the fake result. Flip to `false` before any real demo.
+### Step 1: Garment
+- `ENABLE_GALLERY_PICKER=false` → only "PASTE URL" / "PRODUCT URL" field shown (Gallery code preserved, re-enable via flag)
+- Share from Amazon: `ACTION_SEND` intent → backend scrapes `og:image` → product card auto-populated
+- "P R O C E E D" full-width gold CTA bar at bottom
+
+### Step 2: Try It On
+- Underline-style text fields (no bordered boxes)
+- Person photo persisted across app kills via `PersonPhotoStore`
+- "GENERATE LOOK" gold CTA
+- Non-dismissable progress dialog: large gold `%` counter + thin animated gold progress line
+
+### Step 3: Result
+- Before/After side-by-side (gold border on After panel)
+- Full result image below
+- **Floating "REDIRECT TO MAIN APP" button**: positioned 5% above the bottom of the screen, non-draggable, elevated with an emerald drop shadow
+- Scroll content has bottom padding to stay clear of the floating button
+
+---
+
+## Affiliate Tagging
+
+Logic lives in `appendAffiliateTag()` in `EditorScreen.kt`:
+
+| Condition | Behaviour |
+|-----------|-----------|
+| No `tag` param in URL | Appends `?tag=viralcartf031-21` |
+| `tag` already equals our tag | No-op (idempotent) |
+| Different `tag` present | URL returned untouched (third-party affiliate respected) |
+| `AFFILIATE_TAG` is `""` | Disabled entirely |
+
+After tagging, the event is logged to:
+- **Android Logcat** — tag `FitApp/Redirect` (visible in Android Studio)
+- **Backend log file** — via `POST /api/images/log-redirect` → `fileLog.info('Redirect', …)` → `backend/logs/app-{timestamp}.log`
+
+---
+
+## App Icon
+
+TryOnMe logo placed in all mipmap density folders (`ic_launcher.png` + `ic_launcher_fg.png`).
+Adaptive icon (`mipmap-anydpi-v26/ic_launcher.xml`) uses `ic_launcher_fg` as foreground to break the self-reference loop that caused the Android robot icon to appear on API 26+.
 
 ---
 
@@ -181,9 +220,13 @@ When `true`: skips all network calls, simulates the full progress animation (~8s
 - **`android:usesCleartextTraffic="true"`** in AndroidManifest — required for HTTP to localhost during development
 - **`android:launchMode="singleTop"`** — prevents duplicate activity when sharing multiple links
 - **`higgsfield.service.ts` kept but not wired** — `image.module.ts` only registers `FalService`
-- **Product image extraction** — uses `og:image` meta tag (works across Amazon, Flipkart, Myntra etc.); strips Amazon size suffixes (e.g. `._SY879_`) for max resolution; falls back to `data-old-hires` attribute
+- **Product image extraction** — uses `og:image` meta tag (works across Amazon, Flipkart, Myntra etc.); strips Amazon size suffixes for max resolution; falls back to `data-old-hires` attribute
 - **Person photo persistence** — gallery `content://` URIs are temporary grants; `PersonPhotoStore` copies bytes to `filesDir` and saves the path to SharedPreferences so the photo survives process death
 - **`referenceMediaId` short-circuit** — when garment is loaded via share (already uploaded to fal.ai), `generate()` skips the upload step entirely and uses the stored mediaId directly
+- **Gallery picker config** — `ENABLE_GALLERY_PICKER=false` hides the UI tab but all Gallery Kotlin code is preserved and re-activates when the flag is flipped
+- **Affiliate tag safety** — third-party `tag` params are never overwritten; our tag is only injected when no `tag` param is present
+- **fileLog for redirect events** — NestJS `Logger` only goes to stdout; `fileLog` writes to both stdout and the timestamped log file
+- **Floating CTA** — `BoxWithConstraints` used in ResultStep to position the button at `maxHeight * 0.05f` from the bottom; `Modifier.clickable` only (no drag gesture), so position is fixed
 
 ---
 
@@ -199,6 +242,10 @@ When `true`: skips all network calls, simulates the full progress animation (~8s
 | Amazon CDN images blocked in browser | `upload-url` endpoint fetches server-side; bypasses CORS |
 | `AxiosHeaderValue` TypeScript error on `content-type` | Cast to `String()` before calling `.split()` |
 | Gallery URI lost on app kill | `PersonPhotoStore` copies to internal storage; stable `file://` URI saved to SharedPreferences |
+| Adaptive icon showing Android robot | Foreground renamed to `ic_launcher_fg` to avoid self-reference loop on API 26+ |
+| Redirect logs missing from log file | Replaced NestJS `Logger` with `fileLog` in the log-redirect controller endpoint |
+| ValidationPipe rejecting log-redirect body | Added `class-validator` decorators (`@IsString`, `@IsBoolean`, `@IsOptional`) to `LogRedirectDto` |
+| `Theme.Material.NoTitleBar` AAPT error | Reverted to valid parent `android:Theme.Material.Light.NoActionBar` in themes.xml |
 
 ---
 
