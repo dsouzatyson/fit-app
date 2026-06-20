@@ -8,12 +8,15 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
+import android.util.Log
+import com.fitapp.imageeditor.BuildConfig
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -30,6 +33,10 @@ import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.layout.ContentScale
@@ -37,14 +44,29 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.fitapp.imageeditor.ui.theme.Ash
+import com.fitapp.imageeditor.ui.theme.Cream
+import com.fitapp.imageeditor.ui.theme.Emerald
+import com.fitapp.imageeditor.ui.theme.EmeraldDim
+import com.fitapp.imageeditor.ui.theme.Gold
+import com.fitapp.imageeditor.ui.theme.GoldLight
+import com.fitapp.imageeditor.ui.theme.Graphite
+import com.fitapp.imageeditor.ui.theme.Iron
+import com.fitapp.imageeditor.ui.theme.Obsidian
+import com.fitapp.imageeditor.ui.theme.Onyx
+import com.fitapp.imageeditor.ui.theme.Steel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.net.URL
+
+// ── Entry point ───────────────────────────────────────────────────────────────
 
 @Composable
 fun EditorScreen(
@@ -73,19 +95,13 @@ private fun GarmentStep(state: EditorUiState, viewModel: EditorViewModel) {
         (state.referenceMode == ReferenceMode.Url && state.referenceUrl.isNotBlank())
 
     Scaffold(
-        topBar = {
-            TopAppBar(title = { Text("Choose Garment", fontWeight = FontWeight.Bold) })
-        },
+        containerColor = Obsidian,
         bottomBar = {
-            Surface(shadowElevation = 8.dp) {
-                Button(
-                    onClick = viewModel::proceedToPersonStep,
-                    enabled = garmentReady && !state.garmentLoading,
-                    modifier = Modifier.fillMaxWidth().padding(16.dp).height(52.dp)
-                ) {
-                    Text("Proceed →", style = MaterialTheme.typography.titleMedium)
-                }
-            }
+            LuxuryPrimaryButton(
+                label = "P R O C E E D",
+                onClick = viewModel::proceedToPersonStep,
+                enabled = garmentReady && !state.garmentLoading,
+            )
         }
     ) { padding ->
         Column(
@@ -93,23 +109,70 @@ private fun GarmentStep(state: EditorUiState, viewModel: EditorViewModel) {
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            when {
-                state.garmentLoading -> GarmentLoadingCard()
-                state.referenceProductTitle != null && state.referenceUrl.isNotBlank() ->
-                    GarmentProductCard(imageUrl = state.referenceUrl, title = state.referenceProductTitle)
-                else -> GarmentManualPicker(
-                    mode = state.referenceMode,
-                    uri = state.referenceUri,
-                    url = state.referenceUrl,
-                    onModeChange = viewModel::setReferenceMode,
-                    onPicked = viewModel::setReferenceUri,
-                    onUrlChange = viewModel::setReferenceUrl
+            // Editorial header
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 28.dp)
+                    .padding(top = 56.dp, bottom = 32.dp)
+            ) {
+                Text(
+                    text = "01",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = Gold,
+                    letterSpacing = 3.sp,
+                )
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    text = "CHOOSE YOUR\nGARMENT",
+                    style = MaterialTheme.typography.displayLarge,
+                    color = Cream,
+                    lineHeight = 42.sp,
+                )
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = "Select a piece to try on virtually",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Ash,
                 )
             }
-            state.error?.let { ErrorCard(msg = it, onDismiss = viewModel::clearError) }
+
+            GoldDivider()
+
+            Spacer(Modifier.height(28.dp))
+
+            // Garment content area
+            Box(modifier = Modifier.padding(horizontal = 20.dp)) {
+                when {
+                    state.garmentLoading ->
+                        GarmentLoadingCard()
+                    state.referenceProductTitle != null && state.referenceUrl.isNotBlank() ->
+                        GarmentProductCard(
+                            imageUrl = state.referenceUrl,
+                            title    = state.referenceProductTitle,
+                        )
+                    else ->
+                        GarmentManualPicker(
+                            mode       = state.referenceMode,
+                            uri        = state.referenceUri,
+                            url        = state.referenceUrl,
+                            onModeChange = viewModel::setReferenceMode,
+                            onPicked   = viewModel::setReferenceUri,
+                            onUrlChange = viewModel::setReferenceUrl,
+                        )
+                }
+            }
+
+            Spacer(Modifier.height(24.dp))
+
+            state.error?.let {
+                Box(Modifier.padding(horizontal = 20.dp)) {
+                    LuxuryErrorCard(msg = it, onDismiss = viewModel::clearError)
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
         }
     }
 }
@@ -120,38 +183,54 @@ private fun GarmentStep(state: EditorUiState, viewModel: EditorViewModel) {
 private fun PersonStep(state: EditorUiState, viewModel: EditorViewModel) {
     val isProcessing = state.phase in listOf(Phase.Uploading, Phase.Generating, Phase.Polling)
 
-    // Non-dismissable progress dialog — dims + disables everything behind it
     if (isProcessing) {
         Dialog(
             onDismissRequest = {},
             properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)
         ) {
-            InteractiveProgressCard(
+            LuxuryProgressCard(
                 progress = state.loadingProgress,
-                message = state.loadingMessage
+                message  = state.loadingMessage,
             )
         }
     }
 
     Scaffold(
+        containerColor = Obsidian,
         topBar = {
-            TopAppBar(
-                title = { Text("Try It On", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    if (!isProcessing) {
-                        IconButton(onClick = viewModel::backToGarmentStep) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                        }
-                    }
-                },
-                actions = {
-                    if (!isProcessing) {
-                        IconButton(onClick = viewModel::reset) {
-                            Icon(Icons.Default.Refresh, contentDescription = "Reset")
-                        }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = 20.dp, vertical = 14.dp)
+            ) {
+                if (!isProcessing) {
+                    IconButton(
+                        onClick = viewModel::backToGarmentStep,
+                        modifier = Modifier.align(Alignment.CenterStart)
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Silver,
+                        )
                     }
                 }
-            )
+                Text(
+                    text = "02  ·  TRY IT ON",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Silver,
+                    modifier = Modifier.align(Alignment.Center),
+                )
+                if (!isProcessing) {
+                    IconButton(
+                        onClick = viewModel::reset,
+                        modifier = Modifier.align(Alignment.CenterEnd)
+                    ) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Reset", tint = Ash)
+                    }
+                }
+            }
         }
     ) { padding ->
         Column(
@@ -159,41 +238,66 @@ private fun PersonStep(state: EditorUiState, viewModel: EditorViewModel) {
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            GoldDivider()
+
+            // Garment strip
             GarmentSummaryRow(state = state)
-            HorizontalDivider()
+            GoldDivider()
 
-            Text("Your Photo", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-            PersonPhotoPicker(
-                uri = state.sourceUri,
-                enabled = !isProcessing,
-                onPicked = viewModel::setSourceUri
-            )
+            Spacer(Modifier.height(28.dp))
 
-            OutlinedTextField(
-                value = state.prompt,
-                onValueChange = viewModel::setPrompt,
-                label = { Text("Edit instruction") },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !isProcessing,
-                minLines = 2
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp)
+            ) {
+                // Section label
+                Text(
+                    text = "YOUR PHOTO",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = Gold,
+                    letterSpacing = 2.sp,
+                )
 
-            ModelDropdown(selected = state.selectedModel, onSelect = viewModel::setModel, enabled = !isProcessing)
+                PersonPhotoPicker(
+                    uri     = state.sourceUri,
+                    enabled = !isProcessing,
+                    onPicked = viewModel::setSourceUri,
+                )
 
-            if (state.phase in listOf(Phase.Idle, Phase.Error)) {
-                Button(
-                    onClick = viewModel::generate,
-                    modifier = Modifier.fillMaxWidth().height(52.dp),
-                    enabled = viewModel.isGenerateEnabled(state)
-                ) {
-                    Text("Generate", style = MaterialTheme.typography.titleMedium)
+                // Edit instruction — underline style
+                LuxuryTextField(
+                    value       = state.prompt,
+                    onValueChange = viewModel::setPrompt,
+                    label       = "EDIT INSTRUCTION",
+                    enabled     = !isProcessing,
+                    minLines    = 2,
+                )
+
+                LuxuryModelDropdown(
+                    selected = state.selectedModel,
+                    onSelect = viewModel::setModel,
+                    enabled  = !isProcessing,
+                )
+
+                if (state.phase in listOf(Phase.Idle, Phase.Error)) {
+                    LuxuryPrimaryButton(
+                        label   = "GENERATE LOOK",
+                        onClick = viewModel::generate,
+                        enabled = viewModel.isGenerateEnabled(state),
+                        modifier = Modifier.fillMaxWidth(),
+                        padded  = false,
+                    )
                 }
-            }
 
-            state.error?.let { ErrorCard(msg = it, onDismiss = viewModel::clearError) }
+                state.error?.let {
+                    LuxuryErrorCard(msg = it, onDismiss = viewModel::clearError)
+                }
+
+                Spacer(Modifier.height(16.dp))
+            }
         }
     }
 }
@@ -207,121 +311,251 @@ private fun ResultStep(state: EditorUiState, viewModel: EditorViewModel) {
     var saving by remember { mutableStateOf(false) }
     var saveError by remember { mutableStateOf<String?>(null) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(title = { Text("Result", fontWeight = FontWeight.Bold) })
-        },
-        bottomBar = {
-            Surface(shadowElevation = 8.dp) {
-                Button(
-                    onClick = {
-                        saving = true
-                        coroutineScope.launch {
-                            val saved = state.outputUrl?.let { saveImageToGallery(context, it) } ?: false
-                            if (saved) {
-                                // Redirect back to the originating app (Amazon)
-                                val redirectUrl = state.shareUrl ?: "https://www.amazon.in"
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(redirectUrl)).apply {
-                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                }
-                                context.startActivity(intent)
-                            } else {
-                                saveError = "Failed to save image. Please try again."
-                            }
-                            saving = false
-                        }
-                    },
-                    enabled = !saving,
-                    modifier = Modifier.fillMaxWidth().padding(16.dp).height(52.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF2E7D32),   // Material Green 800
-                        contentColor = Color.White
-                    )
-                ) {
-                    if (saving) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            strokeWidth = 2.dp,
-                            color = Color.White
-                        )
-                        Spacer(Modifier.width(10.dp))
-                        Text("Saving…", style = MaterialTheme.typography.titleMedium)
-                    } else {
-                        Text("↗  Redirect to main app", style = MaterialTheme.typography.titleMedium)
-                    }
+    // Redirect action — extracted so both the button and its logic stay in one place
+    val onRedirect: () -> Unit = {
+        saving = true
+        coroutineScope.launch {
+            val saved = state.outputUrl?.let { saveImageToGallery(context, it) } ?: false
+            if (saved) {
+                val originalUrl = state.shareUrl ?: "https://www.amazon.in"
+                val redirectUrl = appendAffiliateTag(originalUrl)
+                val tagAdded = redirectUrl != originalUrl
+                val tag = BuildConfig.AFFILIATE_TAG.trim().takeIf { it.isNotEmpty() }
+
+                Log.i("FitApp/Redirect", "Original URL : $originalUrl")
+                Log.i("FitApp/Redirect", "Outgoing URL : $redirectUrl")
+                if (tagAdded) {
+                    Log.i("FitApp/Redirect", "Affiliate tag injected: $tag")
+                } else {
+                    Log.i("FitApp/Redirect", "Affiliate tag NOT added (third-party tag present or config empty)")
                 }
+                viewModel.logRedirect(originalUrl, redirectUrl, tagAdded, tag)
+
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(redirectUrl)).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(intent)
+            } else {
+                saveError = "Failed to save. Please try again."
             }
+            saving = false
         }
-    ) { padding ->
+    }
+
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Obsidian)
+    ) {
+        // The floating button sits 20 % above the bottom edge.
+        // Add equivalent bottom padding to scroll content so nothing hides behind it.
+        val floatBottomOffset = maxHeight * 0.05f
+        val buttonHeight = 60.dp          // approximate button height
+        val scrollBottomPad = floatBottomOffset + buttonHeight
+
+        // ── Scrollable content ────────────────────────────────────────────────
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // Before / After comparison
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("Before", style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.align(Alignment.CenterHorizontally))
+            // Header
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = 28.dp)
+                    .padding(top = 36.dp, bottom = 20.dp)
+            ) {
+                Text(
+                    text = "03",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = Gold,
+                    letterSpacing = 3.sp,
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = "YOUR LOOK",
+                    style = MaterialTheme.typography.displayMedium,
+                    color = Cream,
+                )
+            }
+
+            GoldDivider()
+            Spacer(Modifier.height(24.dp))
+
+            // Before / After
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        "BEFORE",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Ash,
+                        modifier = Modifier.align(Alignment.CenterHorizontally),
+                    )
                     Box(
-                        modifier = Modifier.fillMaxWidth().aspectRatio(0.75f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(0.75f)
+                            .background(Graphite)
                     ) {
                         if (state.sourceUri != null) {
-                            AsyncImage(model = state.sourceUri, contentDescription = "Before",
-                                contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                            AsyncImage(
+                                model = state.sourceUri,
+                                contentDescription = "Before",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize(),
+                            )
                         }
                     }
                 }
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("After", style = MaterialTheme.typography.labelMedium,
-                        color = Color(0xFF2E7D32), fontWeight = FontWeight.Bold,
-                        modifier = Modifier.align(Alignment.CenterHorizontally))
+
+                Box(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .aspectRatio(0.75f / 2f)
+                        .background(Steel)
+                        .align(Alignment.Bottom)
+                )
+
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        "AFTER",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Gold,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.align(Alignment.CenterHorizontally),
+                    )
                     Box(
-                        modifier = Modifier.fillMaxWidth().aspectRatio(0.75f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(0.75f)
+                            .background(Graphite)
+                            .border(1.dp, Gold.copy(alpha = 0.4f))
                     ) {
                         if (state.outputUrl != null) {
-                            AsyncImage(model = state.outputUrl, contentDescription = "Result",
-                                contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                            AsyncImage(
+                                model = state.outputUrl,
+                                contentDescription = "Result",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize(),
+                            )
                         }
                     }
                 }
             }
 
-            // Full result image
+            Spacer(Modifier.height(32.dp))
+            GoldDivider()
+            Spacer(Modifier.height(24.dp))
+
             if (state.outputUrl != null) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                ) {
-                    AsyncImage(model = state.outputUrl, contentDescription = "Generated result",
-                        contentScale = ContentScale.FillWidth, modifier = Modifier.fillMaxWidth())
-                }
+                Text(
+                    "FULL RESULT",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Ash,
+                    modifier = Modifier.padding(horizontal = 24.dp),
+                )
+                Spacer(Modifier.height(12.dp))
+                AsyncImage(
+                    model = state.outputUrl,
+                    contentDescription = "Full generated result",
+                    contentScale = ContentScale.FillWidth,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .border(1.dp, Steel),
+                )
             }
 
             saveError?.let {
-                ErrorCard(msg = it, onDismiss = { saveError = null })
+                Spacer(Modifier.height(16.dp))
+                Box(Modifier.padding(horizontal = 20.dp)) {
+                    LuxuryErrorCard(msg = it, onDismiss = { saveError = null })
+                }
+            }
+
+            // Bottom padding so content scrolls clear of the floating button
+            Spacer(Modifier.height(scrollBottomPad))
+        }
+
+        // ── Floating redirect button — fixed, non-draggable ───────────────────
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .offset(y = -floatBottomOffset)
+                .padding(horizontal = 36.dp)
+                .shadow(
+                    elevation       = 24.dp,
+                    shape           = RoundedCornerShape(4.dp),
+                    ambientColor    = Emerald.copy(alpha = 0.4f),
+                    spotColor       = Emerald.copy(alpha = 0.6f),
+                )
+                .background(
+                    brush = Brush.horizontalGradient(
+                        listOf(Color(0xFF1B5E20), Emerald, Color(0xFF2E7D32))
+                    ),
+                    shape = RoundedCornerShape(4.dp),
+                )
+                .clip(RoundedCornerShape(4.dp))
+                .clickable(
+                    enabled           = !saving,
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication        = null,
+                    onClick           = onRedirect,
+                )
+                .padding(horizontal = 28.dp, vertical = 18.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (saving) {
+                Row(
+                    verticalAlignment      = Alignment.CenterVertically,
+                    horizontalArrangement  = Arrangement.spacedBy(12.dp),
+                ) {
+                    CircularProgressIndicator(
+                        modifier    = Modifier.size(14.dp),
+                        strokeWidth = 1.5.dp,
+                        color       = Cream.copy(alpha = 0.7f),
+                    )
+                    Text(
+                        "SAVING…",
+                        style        = MaterialTheme.typography.labelLarge,
+                        color        = Cream.copy(alpha = 0.7f),
+                        letterSpacing = 2.sp,
+                    )
+                }
+            } else {
+                Text(
+                    "↗  REDIRECT TO MAIN APP",
+                    style        = MaterialTheme.typography.labelLarge,
+                    color        = Cream,
+                    letterSpacing = 2.sp,
+                )
             }
         }
     }
 }
 
-/** Saves [imageUrl] (http/https or file/content URI) to the device gallery under Pictures/FitApp. */
+// ── Logic functions (unchanged) ───────────────────────────────────────────────
+
+/** Saves [imageUrl] to the device gallery under Pictures/FitApp. */
 private suspend fun saveImageToGallery(context: Context, imageUrl: String): Boolean =
     withContext(Dispatchers.IO) {
         try {
             val bytes = if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
                 URL(imageUrl).readBytes()
             } else {
-                // Local URI (mock mode) — read via ContentResolver
                 val uri = Uri.parse(imageUrl)
                 context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
                     ?: return@withContext false
@@ -342,158 +576,210 @@ private suspend fun saveImageToGallery(context: Context, imageUrl: String): Bool
         }
     }
 
-// ── Sub-composables ───────────────────────────────────────────────────────────
+/**
+ * Injects the affiliate tag (from BuildConfig.AFFILIATE_TAG) into [url], but ONLY if:
+ *  - No 'tag' param exists yet, OR
+ *  - The existing 'tag' already matches our tag (idempotent re-apply).
+ * If a third-party affiliate tag is present the URL is returned unchanged.
+ */
+private fun appendAffiliateTag(url: String): String {
+    val affiliateTag = BuildConfig.AFFILIATE_TAG.trim()
+    if (affiliateTag.isEmpty()) return url
+    return try {
+        val uri = Uri.parse(url)
+        val existingTag = uri.getQueryParameter("tag")
+        when {
+            existingTag == null       -> uri.buildUpon().appendQueryParameter("tag", affiliateTag).build().toString()
+            existingTag == affiliateTag -> url
+            else                      -> url
+        }
+    } catch (e: Exception) {
+        url
+    }
+}
 
+// ── Luxury Design Components ──────────────────────────────────────────────────
+
+/** 1px gold-tinted horizontal rule */
 @Composable
-private fun PersonPhotoPicker(uri: Uri?, enabled: Boolean, onPicked: (Uri) -> Unit) {
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { it?.let(onPicked) }
-    val shape = RoundedCornerShape(16.dp)
-
-    if (uri != null) {
-        // Photo selected — show preview with "Choose another" button
-        Box(modifier = Modifier.fillMaxWidth()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(260.dp)
-                    .clip(shape)
-                    .border(2.dp, MaterialTheme.colorScheme.primary, shape)
-            ) {
-                AsyncImage(
-                    model = uri,
-                    contentDescription = "Your photo",
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-            // "Choose another" overlay button at bottom
-            if (enabled) {
-                Surface(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 12.dp)
-                        .clickable { launcher.launch("image/*") },
-                    shape = RoundedCornerShape(20.dp),
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
-                    shadowElevation = 4.dp
-                ) {
-                    Text(
-                        "Choose another image",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+private fun GoldDivider() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(1.dp)
+            .background(
+                Brush.horizontalGradient(
+                    colors = listOf(
+                        Color.Transparent,
+                        Gold.copy(alpha = 0.3f),
+                        Gold.copy(alpha = 0.5f),
+                        Gold.copy(alpha = 0.3f),
+                        Color.Transparent,
                     )
-                }
-            }
-        }
-    } else {
-        // No photo yet — empty picker
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(220.dp)
-                .clip(shape)
-                .border(2.dp, MaterialTheme.colorScheme.outlineVariant, shape)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .clickable(enabled = enabled) { launcher.launch("image/*") },
-            contentAlignment = Alignment.Center
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Icon(Icons.Default.Add, contentDescription = null,
-                    modifier = Modifier.size(40.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("Tap to add your photo", style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        }
-    }
-}
-
-@Composable
-private fun InteractiveProgressCard(progress: Float, message: String) {
-    val animatedProgress by animateFloatAsState(
-        targetValue = progress,
-        animationSpec = tween(durationMillis = 600, easing = EaseOutCubic),
-        label = "progress"
+                )
+            )
     )
-    val percent = (animatedProgress * 100).toInt()
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-    ) {
-        Column(
-            modifier = Modifier.padding(24.dp).fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Circular progress with % in centre
-            Box(contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(
-                    progress = { animatedProgress },
-                    modifier = Modifier.size(80.dp),
-                    strokeWidth = 6.dp,
-                    strokeCap = StrokeCap.Round,
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                )
-                Text(
-                    "$percent%",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            }
-            // Animated status message
-            Text(
-                message,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                textAlign = TextAlign.Center
-            )
-            // Step indicators
-            LinearProgressIndicator(
-                progress = { animatedProgress },
-                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(4.dp)),
-                strokeCap = StrokeCap.Round,
-                color = MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-            )
-        }
-    }
 }
 
+/** Full-width primary CTA — gold gradient bar */
 @Composable
-private fun GarmentLoadingCard() {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(24.dp).fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            CircularProgressIndicator()
-            Text("Extracting garment from link…", style = MaterialTheme.typography.bodyMedium)
-        }
-    }
-}
+private fun LuxuryPrimaryButton(
+    label: String,
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+    modifier: Modifier = Modifier,
+    padded: Boolean = true,
+) {
+    val bg = if (enabled)
+        Brush.horizontalGradient(listOf(Gold, GoldLight, Gold))
+    else
+        Brush.horizontalGradient(listOf(Steel, Steel))
 
-@Composable
-private fun GarmentProductCard(imageUrl: String, title: String) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(4.dp)
+    val textColor = if (enabled) Obsidian else Ash
+
+    Box(
+        modifier = modifier
+            .then(if (padded) Modifier.fillMaxWidth() else Modifier)
+            .background(bg)
+            .clickable(
+                enabled = enabled,
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick,
+            )
+            .padding(vertical = 20.dp),
+        contentAlignment = Alignment.Center,
     ) {
-        AsyncImage(
-            model = imageUrl,
-            contentDescription = title,
-            contentScale = ContentScale.FillWidth,
-            modifier = Modifier.fillMaxWidth().heightIn(min = 240.dp, max = 420.dp)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            color = textColor,
+            letterSpacing = 2.5.sp,
         )
     }
 }
 
+/** Full-screen luxury progress overlay */
+@Composable
+private fun LuxuryProgressCard(progress: Float, message: String) {
+    val animatedProgress by animateFloatAsState(
+        targetValue = progress,
+        animationSpec = tween(700, easing = EaseOutCubic),
+        label = "progress",
+    )
+    val percent = (animatedProgress * 100).toInt()
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Onyx)
+            .padding(36.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+        ) {
+            Text(
+                "CREATING YOUR LOOK",
+                style = MaterialTheme.typography.labelLarge,
+                color = Ash,
+                letterSpacing = 2.sp,
+            )
+
+            Text(
+                "$percent%",
+                style = MaterialTheme.typography.displayLarge,
+                color = Gold,
+                fontWeight = FontWeight.Bold,
+            )
+
+            // Thin animated gold progress bar
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.5.dp)
+                    .background(Steel)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(animatedProgress)
+                        .fillMaxHeight()
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(Gold.copy(alpha = 0.6f), GoldLight, Gold)
+                            )
+                        )
+                )
+            }
+
+            Text(
+                message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = Silver,
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+}
+
+/** Garment loading skeleton */
+@Composable
+private fun GarmentLoadingCard() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 60.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        CircularProgressIndicator(
+            modifier    = Modifier.size(28.dp),
+            strokeWidth = 1.5.dp,
+            color       = Gold,
+            trackColor  = Steel,
+        )
+        Text(
+            "EXTRACTING GARMENT…",
+            style        = MaterialTheme.typography.labelLarge,
+            color        = Ash,
+            letterSpacing = 2.sp,
+        )
+    }
+}
+
+/** Full-bleed editorial product card */
+@Composable
+private fun GarmentProductCard(imageUrl: String, title: String) {
+    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(0.85f)
+                .background(Graphite)
+                .border(1.dp, Steel)
+        ) {
+            AsyncImage(
+                model              = imageUrl,
+                contentDescription = title,
+                contentScale       = ContentScale.Fit,
+                modifier           = Modifier.fillMaxSize(),
+            )
+        }
+        Text(
+            text     = title,
+            style    = MaterialTheme.typography.bodyMedium,
+            color    = Silver,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+/** Tab-switched garment picker (gallery / URL).
+ *  Gallery tab is hidden when BuildConfig.ENABLE_GALLERY_PICKER == false;
+ *  the underlying Gallery code is preserved and re-activates automatically
+ *  when the flag is flipped back to true. */
 @Composable
 private fun GarmentManualPicker(
     mode: ReferenceMode,
@@ -501,77 +787,133 @@ private fun GarmentManualPicker(
     url: String,
     onModeChange: (ReferenceMode) -> Unit,
     onPicked: (Uri) -> Unit,
-    onUrlChange: (String) -> Unit
+    onUrlChange: (String) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Select Garment", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+    val galleryEnabled = BuildConfig.ENABLE_GALLERY_PICKER
 
-        val tabShape = RoundedCornerShape(10.dp)
-        Row(
-            modifier = Modifier.fillMaxWidth().clip(tabShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-        ) {
-            listOf(ReferenceMode.Gallery to "📁  Gallery", ReferenceMode.Url to "🔗  Paste URL").forEach { (m, label) ->
-                val selected = mode == m
-                Box(
-                    modifier = Modifier.weight(1f).clip(tabShape)
-                        .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent)
-                        .clickable { onModeChange(m) }
-                        .padding(vertical = 10.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        label,
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                        color = if (selected) MaterialTheme.colorScheme.onPrimary
-                                else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+    // When gallery is disabled, force URL mode so ViewModel state stays consistent
+    LaunchedEffect(galleryEnabled) {
+        if (!galleryEnabled) onModeChange(ReferenceMode.Url)
+    }
+
+    // Effective mode: ignore Gallery selection when picker is disabled
+    val effectiveMode = if (!galleryEnabled) ReferenceMode.Url else mode
+
+    Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
+
+        // Tab switcher — only rendered when gallery is enabled
+        if (galleryEnabled) {
+            Row(modifier = Modifier.fillMaxWidth()) {
+                listOf(ReferenceMode.Gallery to "GALLERY", ReferenceMode.Url to "PASTE URL")
+                    .forEach { (m, label) ->
+                        val selected = effectiveMode == m
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication        = null,
+                                    onClick           = { onModeChange(m) },
+                                )
+                                .padding(bottom = 12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Text(
+                                label,
+                                style      = MaterialTheme.typography.labelMedium,
+                                color      = if (selected) Gold else Ash,
+                                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth(0.6f)
+                                    .height(if (selected) 1.5.dp else 0.5.dp)
+                                    .background(if (selected) Gold else Steel)
+                            )
+                        }
+                    }
             }
         }
 
-        when (mode) {
+        when (effectiveMode) {
             ReferenceMode.Gallery -> {
-                val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { it?.let(onPicked) }
-                val shape = RoundedCornerShape(16.dp)
+                // Reached only when ENABLE_GALLERY_PICKER = true
+                val launcher = rememberLauncherForActivityResult(
+                    ActivityResultContracts.GetContent()
+                ) { it?.let(onPicked) }
+
                 Box(
-                    modifier = Modifier.fillMaxWidth().height(280.dp)
-                        .clip(shape)
-                        .border(2.dp,
-                            if (uri != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
-                            shape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(0.85f)
+                        .background(Graphite)
+                        .border(
+                            width = if (uri != null) 1.dp else 0.5.dp,
+                            color = if (uri != null) Gold.copy(alpha = 0.6f) else Steel,
+                        )
                         .clickable { launcher.launch("image/*") },
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     if (uri != null) {
-                        AsyncImage(model = uri, contentDescription = "Garment",
-                            contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
+                        AsyncImage(
+                            model              = uri,
+                            contentDescription = "Garment",
+                            contentScale       = ContentScale.Fit,
+                            modifier           = Modifier.fillMaxSize(),
+                        )
                     } else {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Icon(Icons.Default.Add, contentDescription = null,
-                                modifier = Modifier.size(40.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text("Tap to pick from gallery", style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .border(1.dp, Steel),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Icon(
+                                    Icons.Default.Add,
+                                    contentDescription = null,
+                                    tint     = Ash,
+                                    modifier = Modifier.size(22.dp),
+                                )
+                            }
+                            Text(
+                                "TAP TO SELECT",
+                                style        = MaterialTheme.typography.labelMedium,
+                                color        = Ash,
+                                letterSpacing = 2.sp,
+                            )
                         }
                     }
                 }
             }
+
             ReferenceMode.Url -> {
-                OutlinedTextField(
-                    value = url, onValueChange = onUrlChange,
-                    label = { Text("Image URL") },
-                    placeholder = { Text("https://m.media-amazon.com/…") },
-                    modifier = Modifier.fillMaxWidth(), singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
+                LuxuryTextField(
+                    value         = url,
+                    onValueChange = onUrlChange,
+                    label         = "PRODUCT URL",
+                    placeholder   = "https://www.amazon.in/dp/…",
+                    keyboardType  = KeyboardType.Uri,
                 )
                 if (url.startsWith("http://") || url.startsWith("https://")) {
-                    val shape = RoundedCornerShape(16.dp)
-                    Box(modifier = Modifier.fillMaxWidth().height(280.dp).clip(shape)
-                        .border(2.dp, MaterialTheme.colorScheme.primary, shape)) {
-                        AsyncImage(model = url, contentDescription = "Garment preview",
-                            contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
+                    Spacer(Modifier.height(4.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(0.85f)
+                            .background(Graphite)
+                            .border(1.dp, Gold.copy(alpha = 0.4f)),
+                    ) {
+                        AsyncImage(
+                            model              = url,
+                            contentDescription = "Garment preview",
+                            contentScale       = ContentScale.Fit,
+                            modifier           = Modifier.fillMaxSize(),
+                        )
                     }
                 }
             }
@@ -579,6 +921,88 @@ private fun GarmentManualPicker(
     }
 }
 
+/** Person photo picker with gold-bordered preview */
+@Composable
+private fun PersonPhotoPicker(uri: Uri?, enabled: Boolean, onPicked: (Uri) -> Unit) {
+    val launcher = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { it?.let(onPicked) }
+
+    if (uri != null) {
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(300.dp)
+                    .background(Graphite)
+                    .border(1.dp, Gold.copy(alpha = 0.5f))
+            ) {
+                AsyncImage(
+                    model              = uri,
+                    contentDescription = "Your photo",
+                    contentScale       = ContentScale.Fit,
+                    modifier           = Modifier.fillMaxSize(),
+                )
+            }
+            if (enabled) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 14.dp)
+                        .background(Obsidian.copy(alpha = 0.88f))
+                        .border(0.5.dp, Steel)
+                        .clickable { launcher.launch("image/*") }
+                        .padding(horizontal = 18.dp, vertical = 8.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        "CHANGE PHOTO",
+                        style        = MaterialTheme.typography.labelMedium,
+                        color        = Gold,
+                        letterSpacing = 1.5.sp,
+                    )
+                }
+            }
+        }
+    } else {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(260.dp)
+                .background(Graphite)
+                .border(0.5.dp, Steel)
+                .clickable(enabled = enabled) { launcher.launch("image/*") },
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .border(1.dp, Steel),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = null,
+                        tint     = Ash,
+                        modifier = Modifier.size(22.dp),
+                    )
+                }
+                Text(
+                    "ADD YOUR PHOTO",
+                    style        = MaterialTheme.typography.labelMedium,
+                    color        = Ash,
+                    letterSpacing = 2.sp,
+                )
+            }
+        }
+    }
+}
+
+/** Garment thumbnail strip shown in PersonStep */
 @Composable
 private fun GarmentSummaryRow(state: EditorUiState) {
     val imageModel: Any? = when {
@@ -586,59 +1010,195 @@ private fun GarmentSummaryRow(state: EditorUiState) {
         state.referenceUri != null      -> state.referenceUri
         else                            -> null
     }
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Graphite)
+            .padding(horizontal = 20.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
         Box(
-            modifier = Modifier.size(64.dp).clip(RoundedCornerShape(10.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
+            modifier = Modifier
+                .size(52.dp)
+                .background(Iron)
+                .border(0.5.dp, Steel)
         ) {
             if (imageModel != null) {
-                AsyncImage(model = imageModel, contentDescription = "Garment",
-                    contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                AsyncImage(
+                    model              = imageModel,
+                    contentDescription = "Garment",
+                    contentScale       = ContentScale.Crop,
+                    modifier           = Modifier.fillMaxSize(),
+                )
             }
         }
-        Column {
-            Text("Garment", style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
-                state.referenceProductTitle ?: "Selected",
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 2
+                "SELECTED GARMENT",
+                style        = MaterialTheme.typography.labelSmall,
+                color        = Ash,
+                letterSpacing = 1.5.sp,
+            )
+            Text(
+                state.referenceProductTitle ?: "Ready to try on",
+                style    = MaterialTheme.typography.bodyMedium,
+                color    = Cream,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
 }
 
+/** Underline-style text field (luxury editorial) */
 @Composable
-private fun ModelDropdown(selected: String, onSelect: (String) -> Unit, enabled: Boolean) {
+private fun LuxuryTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    placeholder: String = "",
+    enabled: Boolean = true,
+    minLines: Int = 1,
+    keyboardType: KeyboardType = KeyboardType.Text,
+) {
+    TextField(
+        value            = value,
+        onValueChange    = onValueChange,
+        label            = {
+            Text(
+                label,
+                style        = MaterialTheme.typography.labelMedium,
+                letterSpacing = 1.5.sp,
+            )
+        },
+        placeholder      = if (placeholder.isNotEmpty()) ({
+            Text(placeholder, style = MaterialTheme.typography.bodySmall)
+        }) else null,
+        enabled          = enabled,
+        minLines         = minLines,
+        modifier         = Modifier.fillMaxWidth(),
+        keyboardOptions  = KeyboardOptions(keyboardType = keyboardType),
+        colors           = TextFieldDefaults.colors(
+            focusedContainerColor      = Color.Transparent,
+            unfocusedContainerColor    = Color.Transparent,
+            disabledContainerColor     = Color.Transparent,
+            focusedIndicatorColor      = Gold,
+            unfocusedIndicatorColor    = Steel,
+            disabledIndicatorColor     = Iron,
+            focusedLabelColor          = Gold,
+            unfocusedLabelColor        = Ash,
+            focusedTextColor           = Cream,
+            unfocusedTextColor         = Cream,
+            disabledTextColor          = Ash,
+            cursorColor                = Gold,
+        ),
+        textStyle        = MaterialTheme.typography.bodyMedium,
+    )
+}
+
+/** Model selector dropdown — underline style */
+@Composable
+private fun LuxuryModelDropdown(selected: String, onSelect: (String) -> Unit, enabled: Boolean) {
     var expanded by remember { mutableStateOf(false) }
     val selectedLabel = AVAILABLE_MODELS.firstOrNull { it.first == selected }?.second ?: selected
-    ExposedDropdownMenuBox(expanded = expanded && enabled, onExpandedChange = { if (enabled) expanded = it }) {
-        OutlinedTextField(
-            value = selectedLabel, onValueChange = {}, readOnly = true,
-            label = { Text("Model") },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier.fillMaxWidth().menuAnchor(), enabled = enabled
+
+    ExposedDropdownMenuBox(
+        expanded = expanded && enabled,
+        onExpandedChange = { if (enabled) expanded = it },
+    ) {
+        TextField(
+            value         = selectedLabel,
+            onValueChange = {},
+            readOnly      = true,
+            label         = {
+                Text(
+                    "MODEL",
+                    style        = MaterialTheme.typography.labelMedium,
+                    letterSpacing = 1.5.sp,
+                )
+            },
+            trailingIcon  = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier      = Modifier
+                .fillMaxWidth()
+                .menuAnchor(),
+            enabled       = enabled,
+            colors        = TextFieldDefaults.colors(
+                focusedContainerColor      = Color.Transparent,
+                unfocusedContainerColor    = Color.Transparent,
+                disabledContainerColor     = Color.Transparent,
+                focusedIndicatorColor      = Gold,
+                unfocusedIndicatorColor    = Steel,
+                disabledIndicatorColor     = Iron,
+                focusedLabelColor          = Gold,
+                unfocusedLabelColor        = Ash,
+                focusedTextColor           = Cream,
+                unfocusedTextColor         = Cream,
+                disabledTextColor          = Ash,
+                cursorColor                = Gold,
+            ),
+            textStyle     = MaterialTheme.typography.bodyMedium,
         )
-        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            AVAILABLE_MODELS.forEach { (id, label) ->
-                DropdownMenuItem(text = { Text(label) }, onClick = { onSelect(id); expanded = false })
+        ExposedDropdownMenu(
+            expanded        = expanded,
+            onDismissRequest = { expanded = false },
+            modifier        = Modifier.background(Onyx),
+        ) {
+            AVAILABLE_MODELS.forEach { (id, lbl) ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            lbl,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (id == selected) Gold else Cream,
+                        )
+                    },
+                    onClick = { onSelect(id); expanded = false },
+                    colors  = MenuDefaults.itemColors(
+                        textColor         = Cream,
+                        leadingIconColor  = Gold,
+                    ),
+                )
             }
         }
     }
 }
 
+/** Minimal left-accented error card */
 @Composable
-private fun ErrorCard(msg: String, onDismiss: () -> Unit) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
-        modifier = Modifier.fillMaxWidth()
+private fun LuxuryErrorCard(msg: String, onDismiss: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.errorContainer)
+            .drawBehind {
+                drawRect(
+                    color    = ErrorRose,
+                    topLeft  = Offset.Zero,
+                    size     = size.copy(width = 3.dp.toPx()),
+                )
+            }
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(modifier = Modifier.padding(12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically) {
-            Text(msg, color = MaterialTheme.colorScheme.onErrorContainer, modifier = Modifier.weight(1f))
-            TextButton(onClick = onDismiss) { Text("Dismiss") }
+        Text(
+            msg,
+            style    = MaterialTheme.typography.bodySmall,
+            color    = MaterialTheme.colorScheme.onErrorContainer,
+            modifier = Modifier.weight(1f),
+        )
+        TextButton(onClick = onDismiss) {
+            Text(
+                "DISMISS",
+                style        = MaterialTheme.typography.labelSmall,
+                color        = MaterialTheme.colorScheme.onErrorContainer,
+                letterSpacing = 1.5.sp,
+            )
         }
     }
 }
+
+// Error color needed locally for the drawBehind accent
+private val ErrorRose = com.fitapp.imageeditor.ui.theme.ErrorRose
+private val Silver    = com.fitapp.imageeditor.ui.theme.Silver

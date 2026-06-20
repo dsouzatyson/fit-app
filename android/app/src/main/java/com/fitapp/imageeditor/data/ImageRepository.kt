@@ -7,6 +7,7 @@ import com.fitapp.imageeditor.network.GenerateRequest
 import com.fitapp.imageeditor.network.JobStatusResponse
 import com.fitapp.imageeditor.network.ExtractProductRequest
 import com.fitapp.imageeditor.network.UploadUrlRequest
+import com.fitapp.imageeditor.network.LogRedirectRequest
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -53,6 +54,13 @@ class ImageRepository @Inject constructor(
     ): String = api.generate(
         GenerateRequest(sourceMediaId, referenceMediaId, prompt, model)
     ).jobId
+
+    /** Fire-and-forget: send redirect URL info to backend logs. Swallows errors silently. */
+    suspend fun logRedirect(originalUrl: String, finalUrl: String, tagAdded: Boolean, tag: String?) {
+        runCatching {
+            api.logRedirect(LogRedirectRequest(originalUrl, finalUrl, tagAdded, tag))
+        }
+    }
 
     /**
      * Poll every 3s until completed/failed (max 120s).

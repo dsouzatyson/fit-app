@@ -9,7 +9,9 @@
     <application
         android:name=".ImageEditorApp"
         android:allowBackup="true"
-        android:label="AI Image Editor"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:label="TryOnMe"
         android:theme="@style/Theme.FitApp"
         android:usesCleartextTraffic="true">
 

@@ -34,6 +34,15 @@ data class JobStatusResponse(
     val outputUrl: String?
 )
 
+data class LogRedirectRequest(
+    val originalUrl: String,
+    val finalUrl: String,
+    val affiliateTagAdded: Boolean,
+    val affiliateTag: String?
+)
+
+data class LogRedirectResponse(val success: Boolean)
+
 // ── API interface ─────────────────────────────────────────────────────────────
 
 interface ApiService {
@@ -63,4 +72,9 @@ interface ApiService {
     suspend fun getJobStatus(
         @Path("jobId") jobId: String
     ): JobStatusResponse
+
+    @POST("api/images/log-redirect")
+    suspend fun logRedirect(
+        @Body request: LogRedirectRequest
+    ): LogRedirectResponse
 }

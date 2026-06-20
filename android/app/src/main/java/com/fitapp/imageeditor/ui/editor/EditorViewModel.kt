@@ -89,6 +89,13 @@ class EditorViewModel @Inject constructor(
     fun setModel(model: String) = _state.update { it.copy(selectedModel = model) }
     fun clearError() = _state.update { it.copy(error = null, phase = Phase.Idle) }
 
+    /** Fire-and-forget: logs redirect URL to backend. Called from the UI after affiliate tag logic. */
+    fun logRedirect(originalUrl: String, finalUrl: String, tagAdded: Boolean, tag: String?) {
+        viewModelScope.launch {
+            repo.logRedirect(originalUrl, finalUrl, tagAdded, tag)
+        }
+    }
+
     fun proceedToPersonStep() = _state.update { it.copy(step = Step.Person) }
     fun backToGarmentStep() = _state.update { it.copy(step = Step.Garment, phase = Phase.Idle, error = null) }
 

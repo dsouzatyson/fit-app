@@ -25,6 +25,15 @@ android {
         // The person photo is used as the fake result so the full UI flow works.
         // Flip to false before any real demo or production build.
         buildConfigField("Boolean", "MOCK_GENERATION", "true")
+        // ── Gallery picker ─────────────────────────────────────────────────────
+        // Set to false to hide the Gallery tab on the garment screen.
+        // Code is preserved — flip to true to re-enable without any changes.
+        buildConfigField("Boolean", "ENABLE_GALLERY_PICKER", "false")
+        // ── Affiliate tag ──────────────────────────────────────────────────────
+        // Amazon Associates tag appended to redirect URLs.
+        // Change this value here — no Kotlin code edits required.
+        // Leave empty ("") to disable affiliate tagging entirely.
+        buildConfigField("String", "AFFILIATE_TAG", "\"viralcartf031-21\"")
     }
 
     buildFeatures {

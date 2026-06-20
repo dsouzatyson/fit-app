@@ -10,12 +10,14 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { fileLog } from '../../common/file-logger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { ImageService } from './image.service';
 import { GenerateDto } from './dto/generate.dto';
 import { UploadUrlDto } from './dto/upload-url.dto';
 import { ExtractProductDto } from './dto/extract-product.dto';
+import { LogRedirectDto } from './dto/log-redirect.dto';
 
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_FILE_SIZE_MB = 10;
@@ -108,6 +110,30 @@ export class ImageController {
       jobId: result.jobId,
       message: 'Generation started. Poll /jobs/:jobId for the result.',
     };
+  }
+
+  /**
+   * POST /api/images/log-redirect
+   * Called by the Android app just before opening the Amazon redirect URL.
+   * Logs the original and final URLs so affiliate tag activity is visible in backend logs.
+   *
+   * Body: { originalUrl, finalUrl, affiliateTagAdded, affiliateTag? }
+   */
+  @Post('log-redirect')
+  @HttpCode(HttpStatus.OK)
+  logRedirect(@Body() dto: LogRedirectDto) {
+    if (dto.affiliateTagAdded) {
+      fileLog.info('Redirect', `Affiliate tag injected (${dto.affiliateTag})`, {
+        originalUrl: dto.originalUrl,
+        finalUrl: dto.finalUrl,
+      });
+    } else {
+      fileLog.info('Redirect', 'No affiliate tag added (third-party tag present or config empty)', {
+        originalUrl: dto.originalUrl,
+        finalUrl: dto.finalUrl,
+      });
+    }
+    return { success: true };
   }
 
   /**
