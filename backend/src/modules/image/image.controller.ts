@@ -14,6 +14,8 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { ImageService } from './image.service';
 import { GenerateDto } from './dto/generate.dto';
+import { UploadUrlDto } from './dto/upload-url.dto';
+import { ExtractProductDto } from './dto/extract-product.dto';
 
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_FILE_SIZE_MB = 10;
@@ -55,6 +57,43 @@ export class ImageController {
   }
 
   /**
+   * POST /api/images/upload-url
+   * Fetch an image from an external URL and upload it to fal.ai storage.
+   * Returns mediaId (CDN URL) to use in /generate — same as /upload.
+   *
+   * Body: { url: "https://..." }
+   */
+  @Post('upload-url')
+  @HttpCode(HttpStatus.OK)
+  async uploadFromUrl(@Body() dto: UploadUrlDto) {
+    const result = await this.imageService.uploadImageFromUrl(dto.url);
+    return {
+      success: true,
+      mediaId: result.mediaId,
+      message: 'Image fetched and uploaded. Use this mediaId in /generate.',
+    };
+  }
+
+  /**
+   * POST /api/images/extract-product
+   * Given any product page URL (Amazon share link, full URL, etc.),
+   * extracts the main product image, uploads it to fal.ai, and returns a mediaId.
+   *
+   * Body: { url: "https://amzn.in/d/..." }
+   * Returns: { mediaId, imageUrl, productTitle }
+   */
+  @Post('extract-product')
+  @HttpCode(HttpStatus.OK)
+  async extractProduct(@Body() dto: ExtractProductDto) {
+    const result = await this.imageService.extractProductImage(dto.url);
+    return {
+      success: true,
+      ...result,
+      message: 'Product image extracted. Use mediaId in /generate.',
+    };
+  }
+
+  /**
    * POST /api/images/generate
    * Submit an edit job. Returns jobId to poll.
    *
@@ -82,6 +121,7 @@ export class ImageController {
     const result = await this.imageService.getJobStatus(jobId);
     return {
       success: true,
+      jobId,
       ...result,
     };
   }

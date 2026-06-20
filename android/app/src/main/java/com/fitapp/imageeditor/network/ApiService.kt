@@ -3,6 +3,16 @@ package com.fitapp.imageeditor.network
 import okhttp3.MultipartBody
 import retrofit2.http.*
 
+data class UploadUrlRequest(val url: String)
+
+data class ExtractProductRequest(val url: String)
+data class ExtractProductResponse(
+    val success: Boolean,
+    val mediaId: String,
+    val imageUrl: String,
+    val productTitle: String
+)
+
 // ── Response models ──────────────────────────────────────────────────────────
 
 data class UploadResponse(val success: Boolean, val mediaId: String)
@@ -32,6 +42,16 @@ interface ApiService {
     @POST("api/images/upload")
     suspend fun uploadImage(
         @Part file: MultipartBody.Part
+    ): UploadResponse
+
+    @POST("api/images/extract-product")
+    suspend fun extractProductImage(
+        @Body request: ExtractProductRequest
+    ): ExtractProductResponse
+
+    @POST("api/images/upload-url")
+    suspend fun uploadImageFromUrl(
+        @Body request: UploadUrlRequest
     ): UploadResponse
 
     @POST("api/images/generate")

@@ -76,6 +76,103 @@ export class FalService {
     return fileUrl;
   }
 
+  // ── Step 1b: Upload image from external URL to fal storage ────────────────
+
+  async uploadImageFromUrl(imageUrl: string): Promise<string> {
+    fileLog.info(CTX, `uploadImageFromUrl START — ${imageUrl}`);
+
+    let buffer: Buffer;
+    let mimeType: string;
+    let filename: string;
+
+    try {
+      const res = await axios.get(imageUrl, {
+        responseType: 'arraybuffer',
+        timeout: 30_000,
+        maxContentLength: 20 * 1024 * 1024, // 20 MB cap
+      });
+      buffer = Buffer.from(res.data);
+      mimeType = (String(res.headers['content-type'] ?? 'image/jpeg')).split(';')[0].trim();
+      const urlPath = new URL(imageUrl).pathname;
+      filename = urlPath.split('/').pop() || 'garment.jpg';
+    } catch (err) {
+      fileLog.error(CTX, 'uploadImageFromUrl fetch FAILED', { message: err.message });
+      throw new InternalServerErrorException(`Failed to fetch image from URL: ${err.message}`);
+    }
+
+    return this.uploadImage(buffer, filename, mimeType);
+  }
+
+  // ── Step 1c: Extract product image from a product page URL ───────────────
+
+  async extractProductImage(pageUrl: string): Promise<{
+    imageUrl: string;
+    mediaId: string;
+    productTitle: string;
+  }> {
+    fileLog.info(CTX, `extractProductImage START — ${pageUrl}`);
+
+    // Resolve short links (e.g. amzn.in/d/xxx) to full URL
+    let resolvedUrl = pageUrl;
+    try {
+      const head = await axios.get(pageUrl, {
+        maxRedirects: 10,
+        timeout: 15_000,
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FitApp/1.0)' },
+        validateStatus: () => true,
+      });
+      resolvedUrl = head.request?.res?.responseUrl ?? head.config?.url ?? pageUrl;
+      fileLog.info(CTX, `extractProductImage resolved → ${resolvedUrl}`);
+    } catch {
+      // proceed with original URL
+    }
+
+    // Fetch page HTML
+    let html: string;
+    try {
+      const res = await axios.get(resolvedUrl, {
+        timeout: 20_000,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36',
+          'Accept-Language': 'en-US,en;q=0.9',
+        },
+        responseType: 'text',
+      });
+      html = res.data as string;
+    } catch (err) {
+      fileLog.error(CTX, 'extractProductImage page fetch FAILED', { message: err.message });
+      throw new InternalServerErrorException(`Failed to fetch product page: ${err.message}`);
+    }
+
+    // Extract og:image (most reliable across Amazon, Flipkart, Myntra, etc.)
+    const ogImageMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
+      ?? html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
+
+    // Fallback: Amazon landingImage data-old-hires or data-a-dynamic-image
+    const landingMatch = html.match(/data-old-hires=["']([^"']+)["']/i)
+      ?? html.match(/"large"\s*:\s*"(https:\/\/[^"]+m\.media-amazon\.com[^"]+)"/);
+
+    const rawImageUrl = ogImageMatch?.[1] ?? landingMatch?.[1];
+    if (!rawImageUrl) {
+      throw new InternalServerErrorException('Could not extract a product image from this URL. Try sharing the direct image URL instead.');
+    }
+
+    // Strip Amazon image size suffixes to get highest resolution
+    // e.g. ._SY879_ or ._AC_SX522_ → remove
+    const imageUrl = rawImageUrl.replace(/\._[A-Z0-9_,]+_(\.\w+)$/, '$1');
+    fileLog.info(CTX, `extractProductImage imageUrl = ${imageUrl}`);
+
+    // Extract product title from og:title
+    const titleMatch = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i)
+      ?? html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:title["']/i)
+      ?? html.match(/<title[^>]*>([^<]+)<\/title>/i);
+    const productTitle = (titleMatch?.[1] ?? 'Product').replace(/ - Amazon\..*$/, '').trim();
+
+    // Upload image to fal.ai
+    const mediaId = await this.uploadImageFromUrl(imageUrl);
+    return { imageUrl, mediaId, productTitle };
+  }
+
   // ── Step 2: Submit generation job ─────────────────────────────────────────
 
   async generateImage(params: {

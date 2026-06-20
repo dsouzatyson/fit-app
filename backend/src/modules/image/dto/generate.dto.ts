@@ -13,10 +13,10 @@ export type SupportedModel = (typeof SUPPORTED_MODELS)[number];
 
 export class GenerateDto {
   @IsString()
-  sourceMediaId: string; // Higgsfield UUID for image 1 (to be edited)
+  sourceMediaId: string; // fal.ai CDN URL for image 1 (person to be edited)
 
   @IsString()
-  referenceMediaId: string; // Higgsfield UUID for image 2 (reference/style)
+  referenceMediaId: string; // fal.ai CDN URL for image 2 (garment reference)
 
   @IsString()
   prompt: string; // Edit instruction, e.g. "Apply the style from the reference image"

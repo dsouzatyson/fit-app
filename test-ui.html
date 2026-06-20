@@ -84,6 +84,58 @@
     .picker:hover .picker-overlay { opacity: 1; }
     .picker-overlay span { color: #fff; font-size: 12px; font-weight: 600; }
 
+    /* Garment picker with tabs */
+    .garment-col {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .mode-tabs {
+      display: flex;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1.5px solid #d2d2d7;
+      background: #f5f5f7;
+    }
+    .mode-tab {
+      flex: 1;
+      padding: 5px 0;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: #6e6e73;
+      transition: background .15s, color .15s;
+    }
+    .mode-tab.active {
+      background: #0071e3;
+      color: #fff;
+    }
+
+    /* URL mode */
+    .garment-url-panel { display: flex; flex-direction: column; gap: 8px; }
+    .garment-url-panel input[type=url] {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1.5px solid #d2d2d7;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+    .garment-url-panel input[type=url]:focus { outline: none; border-color: #0071e3; }
+
+    .url-preview {
+      aspect-ratio: 1;
+      border-radius: 12px;
+      border: 2px solid #0071e3;
+      overflow: hidden;
+      display: none;
+    }
+    .url-preview.show { display: block; }
+    .url-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
     /* Form fields */
     label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
     textarea, select {
@@ -177,7 +229,7 @@
 
 <div class="card">
   <h1>AI Image Editor</h1>
-  <p class="subtitle">Edit an image using a reference style via Higgsfield API</p>
+  <p class="subtitle">Virtual try-on via fal.ai — swap garments, preserve everything else</p>
 
   <!-- Backend URL -->
   <div class="url-row">
@@ -186,20 +238,46 @@
 
   <!-- Image pickers -->
   <div class="pickers">
+    <!-- Person photo (file only) -->
     <div class="picker" id="sourcePicker">
-      <span class="picker-icon">🖼️</span>
-      <span class="picker-label">Image to Edit<br/><small>tap to select</small></span>
+      <span class="picker-icon">🧍</span>
+      <span class="picker-label">Person Photo<br/><small>tap to select</small></span>
       <input type="file" accept="image/*" id="sourceFile" />
       <img id="sourcePreview" style="display:none" />
       <div class="picker-overlay"><span>Change</span></div>
     </div>
 
-    <div class="picker" id="refPicker">
-      <span class="picker-icon">🎨</span>
-      <span class="picker-label">Reference Style<br/><small>tap to select</small></span>
-      <input type="file" accept="image/*" id="refFile" />
-      <img id="refPreview" style="display:none" />
-      <div class="picker-overlay"><span>Change</span></div>
+    <!-- Garment (file OR URL) -->
+    <div class="garment-col">
+      <!-- Tab toggle -->
+      <div class="mode-tabs">
+        <button class="mode-tab active" id="tabGallery" onclick="setGarmentMode('gallery')">Gallery</button>
+        <button class="mode-tab"        id="tabUrl"     onclick="setGarmentMode('url')">URL</button>
+      </div>
+
+      <!-- Gallery mode -->
+      <div id="garmentGalleryPanel">
+        <div class="picker" id="refPicker">
+          <span class="picker-icon">👕</span>
+          <span class="picker-label">Garment Photo<br/><small>tap to select</small></span>
+          <input type="file" accept="image/*" id="refFile" />
+          <img id="refPreview" style="display:none" />
+          <div class="picker-overlay"><span>Change</span></div>
+        </div>
+      </div>
+
+      <!-- URL mode -->
+      <div id="garmentUrlPanel" class="garment-url-panel" style="display:none">
+        <div class="url-preview" id="urlPreview">
+          <img id="urlPreviewImg" src="" alt="Garment preview" />
+        </div>
+        <input
+          type="url"
+          id="garmentUrl"
+          placeholder="https://example.com/garment.jpg"
+          oninput="onGarmentUrlChange(this.value)"
+        />
+      </div>
     </div>
   </div>
 
@@ -240,6 +318,30 @@
 </div>
 
 <script>
+  let garmentMode = 'gallery'; // 'gallery' | 'url'
+
+  // ── Mode toggle ──────────────────────────────────────────────────────────────
+  function setGarmentMode(mode) {
+    garmentMode = mode;
+    document.getElementById('tabGallery').classList.toggle('active', mode === 'gallery');
+    document.getElementById('tabUrl').classList.toggle('active', mode === 'url');
+    document.getElementById('garmentGalleryPanel').style.display = mode === 'gallery' ? '' : 'none';
+    document.getElementById('garmentUrlPanel').style.display     = mode === 'url'     ? '' : 'none';
+  }
+
+  function onGarmentUrlChange(val) {
+    const preview = document.getElementById('urlPreview');
+    const img     = document.getElementById('urlPreviewImg');
+    const trimmed = val.trim();
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      img.src = trimmed;
+      preview.classList.add('show');
+    } else {
+      preview.classList.remove('show');
+      img.src = '';
+    }
+  }
+
   // ── Preview on file select ──────────────────────────────────────────────────
   function wirePreview(inputId, previewId, pickerId) {
     document.getElementById(inputId).addEventListener('change', function() {
@@ -269,22 +371,34 @@
   }
   function base() { return document.getElementById('backendUrl').value.replace(/\/$/, ''); }
 
-  // ── Upload one image ─────────────────────────────────────────────────────────
-  async function uploadImage(label, file) {
-    console.log(`[upload] ${label} — name=${file?.name} size=${file?.size} type=${file?.type}`);
+  // ── Upload one image (file) ──────────────────────────────────────────────────
+  async function uploadFile(label, file) {
     if (!file) throw new Error(`${label} file is missing`);
     const form = new FormData();
     form.append('file', file);
-    console.log(`[upload] ${label} — sending fetch to ${base()}/api/images/upload`);
     const res = await fetch(`${base()}/api/images/upload`, { method: 'POST', body: form });
-    console.log(`[upload] ${label} — response status: ${res.status}`);
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
       throw new Error(`${label} upload failed (${res.status}): ${body.message ?? res.statusText}`);
     }
     const data = await res.json();
-    console.log(`[upload] ${label} — mediaId: ${data.mediaId}`);
     if (!data.mediaId) throw new Error(`${label} upload succeeded but no mediaId returned`);
+    return data.mediaId;
+  }
+
+  // ── Upload garment from external URL ─────────────────────────────────────────
+  async function uploadFromUrl(imageUrl) {
+    const res = await fetch(`${base()}/api/images/upload-url`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: imageUrl })
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(`URL upload failed (${res.status}): ${body.message ?? res.statusText}`);
+    }
+    const data = await res.json();
+    if (!data.mediaId) throw new Error('URL upload succeeded but no mediaId returned');
     return data.mediaId;
   }
 
@@ -306,34 +420,26 @@
     document.getElementById('errorBox').classList.remove('show');
     document.getElementById('resultBox').classList.remove('show');
 
-    const sourceFile = document.getElementById('sourceFile').files[0];
-    const refFile    = document.getElementById('refFile').files[0];
-    const prompt     = document.getElementById('prompt').value.trim();
+    const sourceFile  = document.getElementById('sourceFile').files[0];
+    const garmentUrl  = document.getElementById('garmentUrl').value.trim();
+    const refFile     = document.getElementById('refFile').files[0];
+    const prompt      = document.getElementById('prompt').value.trim();
 
-    if (!sourceFile) return showError('Please select the image to edit.');
-    if (!refFile)    return showError('Please select the reference style image.');
-    if (!prompt)     return showError('Please enter an edit instruction.');
+    if (!sourceFile) return showError('Please select a person photo.');
+    if (garmentMode === 'gallery' && !refFile)     return showError('Please select a garment photo.');
+    if (garmentMode === 'url'     && !garmentUrl)  return showError('Please enter a garment image URL.');
+    if (!prompt) return showError('Please enter an edit instruction.');
 
     document.getElementById('generateBtn').disabled = true;
-    console.log(`[run] sourceFile=${sourceFile?.name}, refFile=${refFile?.name}, prompt="${prompt}"`);
 
     try {
-      setProgress('Uploading image 1 of 2…');
-      let sourceId, refId;
-      try {
-        sourceId = await uploadImage('Source (person)', sourceFile);
-      } catch (e) {
-        return showError(`Image 1 upload failed: ${e.message}`);
-      }
+      setProgress('Uploading person photo…');
+      const sourceId = await uploadFile('Person', sourceFile);
 
-      setProgress('Uploading image 2 of 2…');
-      try {
-        refId = await uploadImage('Reference (garment)', refFile);
-      } catch (e) {
-        return showError(`Image 2 upload failed: ${e.message}`);
-      }
-
-      console.log(`[run] both uploaded — sourceId=${sourceId}, refId=${refId}`);
+      setProgress('Uploading garment…');
+      const refId = garmentMode === 'url'
+        ? await uploadFromUrl(garmentUrl)
+        : await uploadFile('Garment', refFile);
 
       setProgress('Submitting to AI…');
       const genRes = await fetch(`${base()}/api/images/generate`, {
@@ -347,14 +453,11 @@
         })
       });
       if (!genRes.ok) throw new Error(`Generate failed: ${genRes.status} ${await genRes.text()}`);
-      const genData = await genRes.json();
-      if (!genRes.ok) throw new Error(genData.message ?? `Generate failed: ${genRes.status}`);
-      const { jobId } = genData;
+      const { jobId } = await genRes.json();
 
       setProgress('Generating • pending');
       const outputUrl = await pollJob(jobId);
 
-      // Show result
       document.getElementById('progress').classList.remove('show');
       document.getElementById('resultImg').src = outputUrl;
       document.getElementById('downloadLink').href = outputUrl;
@@ -373,9 +476,12 @@
     document.getElementById('refPreview').style.display = 'none';
     document.getElementById('sourcePicker').classList.remove('has-image');
     document.getElementById('refPicker').classList.remove('has-image');
+    document.getElementById('garmentUrl').value = '';
+    document.getElementById('urlPreview').classList.remove('show');
     document.getElementById('resultBox').classList.remove('show');
     document.getElementById('errorBox').classList.remove('show');
     document.getElementById('generateBtn').disabled = false;
+    setGarmentMode('gallery');
   }
 </script>
 </body>

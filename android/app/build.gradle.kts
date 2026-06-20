@@ -18,8 +18,13 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        // Override in local.properties: BACKEND_URL=https://your-server.com
-        buildConfigField("String", "BACKEND_URL", "\"http://192.168.0.192:3000\"")
+        // Emulator: 10.0.2.2 maps to host localhost. Physical device: use your LAN IP.
+        buildConfigField("String", "BACKEND_URL", "\"http://10.0.2.2:3000\"")
+        // ── Mock flag ──────────────────────────────────────────────────────────
+        // Set to true to skip fal.ai calls during UI testing (saves money).
+        // The person photo is used as the fake result so the full UI flow works.
+        // Flip to false before any real demo or production build.
+        buildConfigField("Boolean", "MOCK_GENERATION", "true")
     }
 
     buildFeatures {

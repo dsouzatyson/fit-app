@@ -15,6 +15,15 @@ export class ImageService {
     return { mediaId };
   }
 
+  async extractProductImage(url: string) {
+    return this.fal.extractProductImage(url);
+  }
+
+  async uploadImageFromUrl(url: string): Promise<{ mediaId: string }> {
+    const mediaId = await this.fal.uploadImageFromUrl(url);
+    return { mediaId };
+  }
+
   async generate(dto: GenerateDto): Promise<{ jobId: string }> {
     this.logger.log(`Generating — source=${dto.sourceMediaId}, ref=${dto.referenceMediaId}`);
     const jobId = await this.fal.generateImage({

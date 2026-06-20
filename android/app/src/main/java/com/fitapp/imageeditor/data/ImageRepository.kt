@@ -5,6 +5,8 @@ import android.net.Uri
 import com.fitapp.imageeditor.network.ApiService
 import com.fitapp.imageeditor.network.GenerateRequest
 import com.fitapp.imageeditor.network.JobStatusResponse
+import com.fitapp.imageeditor.network.ExtractProductRequest
+import com.fitapp.imageeditor.network.UploadUrlRequest
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -18,7 +20,7 @@ class ImageRepository @Inject constructor(
     private val api: ApiService,
     @ApplicationContext private val context: Context
 ) {
-    /** Upload a Uri → returns Higgsfield mediaId */
+    /** Upload a Uri → returns fal.ai CDN URL (used as mediaId in /generate) */
     suspend fun uploadImage(uri: Uri): String {
         val stream = context.contentResolver.openInputStream(uri)
             ?: error("Cannot open image")
@@ -30,6 +32,17 @@ class ImageRepository @Inject constructor(
         )
         return api.uploadImage(part).mediaId
     }
+
+    /** Upload image from external URL → returns fal.ai CDN URL */
+    suspend fun uploadImageFromUrl(url: String): String =
+        api.uploadImageFromUrl(UploadUrlRequest(url)).mediaId
+
+    /**
+     * Given a product page URL (Amazon share link, etc.),
+     * extracts the main product image, uploads to fal.ai, returns mediaId + metadata.
+     */
+    suspend fun extractProductImage(pageUrl: String) =
+        api.extractProductImage(ExtractProductRequest(pageUrl))
 
     /** Submit generation → returns jobId */
     suspend fun generate(
